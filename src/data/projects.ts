@@ -148,6 +148,8 @@ export const PROJECTS: Project[] = [
     label: 'Studio',
     sub: 'ARCHITECTURE · RES.',
     glyph: 'cottage',
+    height: 8,
+    roofStyle: 'pitched',
     desc: 'Residential architectural practice — the quiet cottage at the far edge of the map. Prachi brings the same spatial thinking she applies to physical buildings to every digital surface she designs.',
     tags: ['Architecture', 'Residential', 'Spatial'],
   },

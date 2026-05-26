@@ -18,6 +18,8 @@ export type GlyphName =
   | 'rocks'
   | 'sign'
 
+export type RoofStyle = 'flat' | 'setback' | 'pitched'
+
 export interface Project {
   id: string
   gx: number
@@ -28,6 +30,12 @@ export interface Project {
   glyph: GlyphName
   desc: string
   tags: string[]
+  /** Optional 3D overrides; derived from the graph position when omitted. */
+  height?: number
+  footprint?: number
+  roofStyle?: RoofStyle
+  /** Path to a logo image; when set it replaces the wordmark on the building. */
+  logo?: string
 }
 
 export interface FillerTile {

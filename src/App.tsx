@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { World } from './components/World'
+import { Scene } from './scene/Scene'
 import { ProjectOverlay } from './components/ProjectOverlay'
 import type { Project } from './types'
 
@@ -8,7 +8,7 @@ export default function App() {
 
   return (
     <div className="h-full">
-      <World onSelect={(project, rect) => setOverlay({ project, rect })} />
+      <Scene onSelect={(project, rect) => setOverlay({ project, rect })} />
       {overlay && (
         <ProjectOverlay
           project={overlay.project}

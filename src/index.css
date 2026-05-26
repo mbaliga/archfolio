@@ -25,33 +25,14 @@
   }
 }
 
-/*
- * The isometric tile transform composes four runtime values fed in as inline
- * CSS custom properties (--sx/--sy lattice position, --ox/--oy hover jigsaw
- * push, --lift hover raise). It can't be expressed as static utilities, so it
- * lives here as a single component class.
- */
 @layer components {
-  .iso-tile {
-    position: absolute;
-    left: 0;
-    top: 0;
-    transform: translate(-50%, -50%) translate(var(--sx, 0px), var(--sy, 0px))
-      translate(var(--ox, 0px), var(--oy, 0px))
-      translateY(calc(-1 * var(--lift, 0px)));
-    transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1.05);
-    cursor: pointer;
-    will-change: transform;
-  }
-  .world-stage {
+  /* Google-Maps-style grab affordance on the 3D canvas. Buildings override
+     this to a pointer on hover by setting the canvas cursor directly. */
+  .scene-canvas {
     cursor: grab;
   }
-  .world-stage.dragging {
+  .scene-canvas:active {
     cursor: grabbing;
-  }
-  /* Snappy panning: kill the easing while the world is being dragged. */
-  .world-stage.dragging .iso-tile {
-    transition: none !important;
   }
 }
 
@@ -61,15 +42,6 @@
   }
   to {
     opacity: 1;
-  }
-}
-
-@keyframes drift {
-  from {
-    transform: translateX(-240px);
-  }
-  to {
-    transform: translateX(2200px);
   }
 }
 
