@@ -1,4 +1,4 @@
-import type { Project, FillerTile, GridPoint } from '../types'
+import type { Project, FillerTile } from '../types'
 
 // Twelve shipped surfaces + the architecture "Studio" cottage, mapped onto the
 // complexity (x) / audience (y) graph.
@@ -167,57 +167,4 @@ export const FILLER: FillerTile[] = [
   { id: 'f7', gx: 4, gy: -6, glyph: 'rocks' },
   { id: 'f8', gx: -4, gy: -6, glyph: 'trees' },
   { id: 'f9', gx: 5, gy: 5, glyph: 'trees' },
-]
-
-// Road network as polylines in grid space.
-export const MAIN_ROADS: GridPoint[][] = [
-  [
-    [-7, 0],
-    [7, 0],
-  ],
-  [
-    [0, -6],
-    [0, 6],
-  ],
-]
-
-export const ARTERIES: GridPoint[][] = [
-  // Horizontals (constant gy)
-  [
-    [-4, 2],
-    [6, 2],
-  ],
-  [
-    [-4, -2],
-    [4, -2],
-  ],
-  [
-    [-4, 4],
-    [5, 4],
-  ],
-  [
-    [-2, -4],
-    [4, -4],
-  ],
-  // Verticals (constant gx)
-  [
-    [2, -1],
-    [2, 4],
-  ],
-  [
-    [-2, -4],
-    [-2, 4],
-  ],
-  [
-    [4, -4],
-    [4, 3],
-  ],
-  [
-    [6, 0],
-    [6, 6],
-  ],
-  [
-    [-4, -2],
-    [-4, 5],
-  ],
 ]

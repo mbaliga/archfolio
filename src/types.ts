@@ -47,3 +47,21 @@ export interface FillerTile {
 }
 
 export type GridPoint = [number, number]
+
+export type LandmarkKind = 'cinema' | 'stadium' | 'library' | 'gallery' | 'cafe' | 'music'
+
+export interface LandmarkItem {
+  primary: string
+  secondary?: string
+}
+
+export interface Landmark {
+  id: string
+  gx: number
+  gy: number
+  kind: LandmarkKind
+  label: string
+  blurb: string
+  accent: string
+  items: LandmarkItem[]
+}

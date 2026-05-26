@@ -5,11 +5,14 @@ import { Ground } from './Ground'
 import { Roads } from './Roads'
 import { Props } from './Props'
 import { Building } from './Building'
-import { BUILDINGS } from './lib/cityModel'
-import type { Project } from '../types'
+import { Landmark } from './Landmark'
+import { StreetSigns } from './StreetSigns'
+import { BUILDINGS, LANDMARK_DEFS } from './lib/cityModel'
+import type { Project, Landmark as LandmarkData } from '../types'
 
 interface CityWorldProps {
   onSelect: (project: Project, rect: DOMRect) => void
+  onSelectLandmark: (landmark: LandmarkData, rect: DOMRect) => void
 }
 
 // Project a building's world bounding box to a screen-space rect, so the DOM
@@ -48,7 +51,7 @@ function projectRect(object: Object3D, camera: Camera, canvas: HTMLCanvasElement
   return new DOMRect(minX, minY, Math.max(8, maxX - minX), Math.max(8, maxY - minY))
 }
 
-export function CityWorld({ onSelect }: CityWorldProps) {
+export function CityWorld({ onSelect, onSelectLandmark }: CityWorldProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
@@ -60,11 +63,19 @@ export function CityWorld({ onSelect }: CityWorldProps) {
     [camera, gl, onSelect],
   )
 
+  const handleSelectLandmark = useCallback(
+    (landmark: LandmarkData, object: Object3D) => {
+      onSelectLandmark(landmark, projectRect(object, camera, gl.domElement))
+    },
+    [camera, gl, onSelectLandmark],
+  )
+
   return (
     <group>
       <Ground />
       <Roads />
       <Props />
+      <StreetSigns />
       {BUILDINGS.map((def) => (
         <Building
           key={def.project.id}
@@ -72,6 +83,15 @@ export function CityWorld({ onSelect }: CityWorldProps) {
           hovered={hovered === def.project.id}
           onHover={setHovered}
           onSelect={handleSelect}
+        />
+      ))}
+      {LANDMARK_DEFS.map((def) => (
+        <Landmark
+          key={def.landmark.id}
+          def={def}
+          hovered={hovered === def.landmark.id}
+          onHover={setHovered}
+          onSelect={handleSelectLandmark}
         />
       ))}
     </group>

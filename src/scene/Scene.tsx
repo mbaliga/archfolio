@@ -6,13 +6,14 @@ import { CityWorld } from './CityWorld'
 import { Hero } from '../components/Hero'
 import { AboutPanel } from '../components/AboutPanel'
 import { SKY } from './lib/cityTheme'
-import type { Project } from '../types'
+import type { Project, Landmark } from '../types'
 
 interface SceneProps {
   onSelect: (project: Project, rect: DOMRect) => void
+  onSelectLandmark: (landmark: Landmark, rect: DOMRect) => void
 }
 
-export function Scene({ onSelect }: SceneProps) {
+export function Scene({ onSelect, onSelectLandmark }: SceneProps) {
   const [docked, setDocked] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setDocked(true), 2400)
@@ -47,7 +48,7 @@ export function Scene({ onSelect }: SceneProps) {
         />
 
         <Suspense fallback={null}>
-          <CityWorld onSelect={onSelect} />
+          <CityWorld onSelect={onSelect} onSelectLandmark={onSelectLandmark} />
         </Suspense>
 
         <CameraRig />
@@ -56,33 +57,10 @@ export function Scene({ onSelect }: SceneProps) {
       <Loader />
 
       {/* DOM HUD over the canvas */}
-      <AxisLabels />
       <Hero docked={docked} />
       <AboutPanel />
       <Hint />
     </div>
-  )
-}
-
-const axisBase =
-  'pointer-events-none absolute z-10 flex items-center gap-[5px] font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-soft opacity-[0.55]'
-
-function AxisLabels() {
-  return (
-    <>
-      <div className={`${axisBase} left-1/2 top-5 -translate-x-1/2`}>
-        <span>↑</span> Enterprise
-      </div>
-      <div className={`${axisBase} bottom-5 left-1/2 -translate-x-1/2`}>
-        Consumer <span>↓</span>
-      </div>
-      <div className={`${axisBase} left-6 top-1/2 origin-left -translate-y-1/2 -rotate-90`}>
-        <span>←</span> Simple
-      </div>
-      <div className={`${axisBase} right-6 top-1/2 origin-right -translate-y-1/2 rotate-90`}>
-        Complex <span>→</span>
-      </div>
-    </>
   )
 }
 
@@ -93,7 +71,7 @@ function Hint() {
         className="h-[5px] w-[5px] rounded-full bg-ink-soft"
         style={{ animation: 'pulseDot 1.8s ease-in-out infinite' }}
       />
-      Drag to pan · Scroll to zoom · Right-drag to orbit · Click a building
+      Drag to pan · Scroll to zoom · Right-drag to orbit · Click a building or landmark
     </div>
   )
 }

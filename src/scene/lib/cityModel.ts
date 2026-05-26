@@ -1,5 +1,6 @@
-import { PROJECTS, FILLER, MAIN_ROADS, ARTERIES } from '../../data/projects'
-import type { Project, GridPoint } from '../../types'
+import { PROJECTS, FILLER } from '../../data/projects'
+import { LANDMARKS } from '../../data/landmarks'
+import type { Project, Landmark, RoofStyle } from '../../types'
 import {
   gridToWorld,
   heightFor,
@@ -9,7 +10,6 @@ import {
   LOT,
   type District,
 } from './project3d'
-import type { RoofStyle } from '../../types'
 
 export interface BuildingDef {
   project: Project
@@ -35,7 +35,24 @@ export const BUILDINGS: BuildingDef[] = PROJECTS.map((p) => {
 
 export const HUB_POS = gridToWorld(0, 0)
 
-// --- Roads: grid polylines → world-space segments with a width ---------------
+// --- Civic landmarks ---------------------------------------------------------
+export interface LandmarkDef {
+  landmark: Landmark
+  position: [number, number, number]
+  footprint: number
+}
+
+export const LANDMARK_DEFS: LandmarkDef[] = LANDMARKS.map((l) => ({
+  landmark: l,
+  position: gridToWorld(l.gx, l.gy),
+  footprint: l.kind === 'stadium' ? 12 : 7,
+}))
+
+// --- Roads: a real block grid -------------------------------------------------
+// Buildings sit on EVEN grid lines (world multiples of 16). Roads run on the
+// lines BETWEEN them: two wide avenues on the axes (through the roundabout) and
+// a lattice of streets on ODD grid lines (world ±8, ±24, ±40, ±56). So no
+// building ever sits on a road.
 export interface RoadSeg {
   ax: number
   az: number
@@ -44,25 +61,26 @@ export interface RoadSeg {
   width: number
 }
 
-const MAIN_W = 3.2
-const ART_W = 2.0
+const AVENUE_W = 3.4
+const STREET_W = 1.9
+const ODD_LINES = [-7, -5, -3, -1, 1, 3, 5, 7]
+const HALF_SPAN = 7 * LOT + LOT * 0.5
 
-function toSegments(lines: GridPoint[][], width: number): RoadSeg[] {
+function buildRoads(): RoadSeg[] {
   const segs: RoadSeg[] = []
-  for (const line of lines) {
-    for (let i = 0; i < line.length - 1; i++) {
-      const [ax, , az] = gridToWorld(line[i][0], line[i][1])
-      const [bx, , bz] = gridToWorld(line[i + 1][0], line[i + 1][1])
-      segs.push({ ax, az, bx, bz, width })
-    }
+  // Avenues — the two axes, full span, crossing at the roundabout.
+  segs.push({ ax: -HALF_SPAN, az: 0, bx: HALF_SPAN, bz: 0, width: AVENUE_W })
+  segs.push({ ax: 0, az: -HALF_SPAN, bx: 0, bz: HALF_SPAN, width: AVENUE_W })
+  // Streets — odd grid lines, both orientations, between the building rows.
+  for (const o of ODD_LINES) {
+    const w = o * LOT
+    segs.push({ ax: -HALF_SPAN, az: w, bx: HALF_SPAN, bz: w, width: STREET_W })
+    segs.push({ ax: w, az: -HALF_SPAN, bx: w, bz: HALF_SPAN, width: STREET_W })
   }
   return segs
 }
 
-export const ROAD_SEGS: RoadSeg[] = [
-  ...toSegments(MAIN_ROADS, MAIN_W),
-  ...toSegments(ARTERIES, ART_W),
-]
+export const ROAD_SEGS: RoadSeg[] = buildRoads()
 
 // --- Decorative fabric: FILLER + procedural fill of empty lots ---------------
 export type PropKind = 'tree' | 'rock' | 'house'
@@ -91,6 +109,7 @@ function buildProps(): PropDef[] {
   const rng = mulberry32(20260526)
   const occupied = new Set<string>([
     ...PROJECTS.map((p) => `${p.gx},${p.gy}`),
+    ...LANDMARKS.map((l) => `${l.gx},${l.gy}`),
     '0,0',
   ])
   const props: PropDef[] = []
@@ -112,14 +131,13 @@ function buildProps(): PropDef[] {
     }
   }
 
-  // Procedural fill of remaining empty lots (skip the road axes at gx/gy = 0).
+  // Procedural fill of remaining empty lots (skip the avenue axes).
   for (const gx of GRID_STEPS) {
     for (const gy of GRID_STEPS) {
       if (gx === 0 || gy === 0) continue
       if (occupied.has(`${gx},${gy}`)) continue
-      if (rng() < 0.32) continue // leave breathing room
+      if (rng() < 0.32) continue
       const [x, , z] = gridToWorld(gx, gy)
-      // Consumer side (gy < 0) gets warm low houses; elsewhere small parks.
       if (gy < 0 && rng() < 0.7) {
         props.push({
           id: `h-${gx}-${gy}`,
