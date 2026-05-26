@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Prachi Mittal — Portfolio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body { background: #f5efe4; font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    #root { height: 100%; }
+
+    /* World stage */
+    .world-stage {
+      position: relative; width: 100%; height: 100%;
+      overflow: hidden; background: #fbf7ee;
+      cursor: grab; user-select: none;
+      animation: worldFadeIn 900ms 100ms both;
+    }
+    .world-stage.dragging { cursor: grabbing; }
+    .world-stage.dragging .iso-tile { transition: none !important; }
+    @keyframes worldFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Subtle paper texture */
+    .world-stage::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none; z-index: 1;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(0,0,0,0.022), transparent 38%),
+        radial-gradient(circle at 82% 88%, rgba(0,0,0,0.028), transparent 38%);
+    }
+
+    /* Camera — pan container */
+    .camera {
+      position: absolute; left: 50%; top: 50%;
+      width: 0; height: 0;
+      will-change: transform;
+    }
+
+    /* Tiles */
+    .iso-tile {
+      position: absolute; left: 0; top: 0;
+      transform:
+        translate(-50%, -50%)
+        translate(var(--sx, 0px), var(--sy, 0px))
+        translate(var(--ox, 0px), var(--oy, 0px))
+        translateY(calc(-1 * var(--lift, 0px)));
+      transition: transform 300ms cubic-bezier(.2,.7,.2,1.05);
+      cursor: pointer; will-change: transform;
+    }
+    .iso-tile svg { display: block; overflow: visible; }
+    .iso-tile:hover { z-index: 9 !important; }
+
+    /* Tile labels */
+    .tile-label {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%) translateY(-5px);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: #1b1b1b;
+      pointer-events: none; text-align: center; white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(255,255,255,0.8), 0 0 8px rgba(255,255,255,0.6);
+    }
+    .tile-sub {
+      display: block; font-size: 7.5px; font-weight: 500;
+      opacity: 0.55; margin-top: 2px; letter-spacing: 0.12em;
+    }
+
+    /* Hero */
+    .hero {
+      position: absolute; z-index: 20; pointer-events: none;
+      transition:
+        top 950ms cubic-bezier(.6,.05,.2,1),
+        left 950ms cubic-bezier(.6,.05,.2,1),
+        transform 950ms cubic-bezier(.6,.05,.2,1);
+    }
+    .hero.center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .hero.dock {
+      top: 28px; left: 36px;
+      transform: scale(0.52);
+      transform-origin: top left;
+    }
+    .hero-row { display: flex; align-items: center; gap: 16px; }
+    .hero-name {
+      font-size: 90px; font-weight: 800; letter-spacing: -0.04em;
+      color: #1b1b1b; line-height: 0.9;
+    }
+    .hero-box {
+      border: 4px solid #1b1b1b; border-radius: 20px;
+      padding: 6px 22px 8px;
+      font-size: 82px; font-weight: 800; letter-spacing: -0.03em;
+      color: #1b1b1b; line-height: 1;
+    }
+    .hero-tag {
+      margin-top: 10px; text-align: center;
+      font-size: 21px; font-weight: 500; color: #4a463f; letter-spacing: 0.02em;
+    }
+
+    /* Axis labels */
+    .axis-label {
+      position: absolute; z-index: 10;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #4a463f; opacity: 0.55; pointer-events: none;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .axis-label.tl { top: 20px; left: 50%; transform: translateX(-50%); }
+    .axis-label.bl { bottom: 20px; left: 50%; transform: translateX(-50%); }
+    .axis-label.lt { left: 24px; top: 50%; transform: translateY(-50%) rotate(-90deg); transform-origin: left center; }
+    .axis-label.rt { right: 24px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: right center; }
+
+    /* About panel */
+    .about-panel {
+      position: absolute; z-index: 15; bottom: 24px; right: 28px;
+      background: rgba(255,255,255,0.72); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0,0,0,0.07); border-radius: 14px;
+      padding: 16px 18px; width: 268px;
+      font-size: 12px; color: #1b1b1b;
+    }
+    .about-panel h4 {
+      margin: 0 0 7px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #4a463f; font-family: 'JetBrains Mono', monospace;
+    }
+    .about-panel p { margin: 0 0 12px; line-height: 1.55; }
+    .about-links { display: flex; flex-wrap: wrap; gap: 5px; }
+    .about-links a {
+      display: inline-block; padding: 5px 10px;
+      text-decoration: none; font-size: 11px; font-weight: 600;
+      letter-spacing: 0.04em; border-radius: 999px; transition: transform 180ms;
+    }
+    .about-links a:hover { transform: translateY(-2px); }
+    .about-links a.solid { background: #1b1b1b; color: #fbf7ee; }
+    .about-links a.ghost { background: transparent; color: #1b1b1b; border: 1px solid rgba(0,0,0,0.2); }
+
+    /* Hint */
+    .hint {
+      position: absolute; bottom: 24px; left: 28px; z-index: 15;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #4a463f; opacity: 0.5; display: flex; align-items: center; gap: 7px;
+    }
+    .hint-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: #4a463f;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.4); } }
+
+    /* Clouds */
+    .cloud {
+      position: absolute; pointer-events: none;
+      width: 120px; height: 28px;
+      background: rgba(255,255,255,0.5); border-radius: 999px;
+      filter: blur(2.5px); animation: drift linear infinite;
+    }
+    @keyframes drift { from { transform: translateX(-240px); } to { transform: translateX(2200px); } }
+
+    /* ── Project overlay (immersive takeover) ── */
+    .proj-overlay {
+      position: fixed; z-index: 50;
+      background: #fbf7ee; overflow: hidden;
+      transition:
+        top 600ms cubic-bezier(0.4,0,0.2,1),
+        left 600ms cubic-bezier(0.4,0,0.2,1),
+        width 600ms cubic-bezier(0.4,0,0.2,1),
+        height 600ms cubic-bezier(0.4,0,0.2,1),
+        border-radius 600ms cubic-bezier(0.4,0,0.2,1);
+    }
+    .proj-content {
+      position: absolute; inset: 0;
+      overflow-y: auto; overflow-x: hidden;
+      padding: 88px min(10vw, 96px) 80px;
+      opacity: 0; transition: opacity 360ms 320ms;
+    }
+    .proj-content.visible { opacity: 1; }
+    .proj-close {
+      position: fixed; top: 22px; right: 22px; z-index: 60;
+      width: 44px; height: 44px; border-radius: 22px;
+      background: rgba(27,27,27,0.09); border: none; cursor: pointer;
+      font-size: 20px; color: #1b1b1b; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 360ms 320ms, background 180ms;
+    }
+    .proj-close.visible { opacity: 1; }
+    .proj-close:hover { background: rgba(27,27,27,0.16); }
+
+    /* Project content typography */
+    .proj-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #4a463f; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .proj-eyebrow::before {
+      content: ''; display: inline-block;
+      width: 28px; height: 3px; border-radius: 2px;
+      background: currentColor; opacity: 0.5; flex-shrink: 0;
+    }
+    .proj-title {
+      font-size: clamp(42px, 7vw, 80px); font-weight: 800;
+      letter-spacing: -0.03em; color: #1b1b1b;
+      line-height: 1; margin-bottom: 10px;
+    }
+    .proj-sub {
+      font-size: 17px; font-weight: 500; color: #4a463f;
+      letter-spacing: 0.01em; margin-bottom: 48px;
+    }
+    .proj-body {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+      margin-bottom: 56px; align-items: start;
+    }
+    @media (max-width: 800px) { .proj-body { grid-template-columns: 1fr; } }
+    .proj-desc {
+      font-size: 17px; line-height: 1.75; color: #2a2622;
+    }
+    .proj-meta { display: flex; flex-direction: column; gap: 20px; }
+    .proj-meta-row label {
+      display: block; font-family: 'JetBrains Mono', monospace;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #4a463f; margin-bottom: 6px;
+    }
+    .proj-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .proj-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+      background: rgba(0,0,0,0.06); padding: 5px 10px;
+      border-radius: 999px; color: #1b1b1b;
+    }
+    .proj-accent-bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 5px;
+      border-radius: 0;
+      opacity: 0; transition: opacity 400ms 200ms;
+    }
+    .proj-accent-bar.visible { opacity: 1; }
+    .proj-divider { height: 1px; background: rgba(0,0,0,0.08); margin: 0 0 48px; }
+    .proj-images { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .proj-images.single { grid-template-columns: 1fr; }
+    .proj-placeholder {
+      background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(0,0,0,0.22); cursor: default;
+    }
+    .proj-placeholder.wide { aspect-ratio: 16/9; }
+    .proj-placeholder.square { aspect-ratio: 4/3; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+/* ── Isometric math ───────────────────────────────────────────────────────── */
+const HALF_W = 100;
+const HALF_H = 50;
+const SPACING = 1.45;
+
+function gridToScreen(gx, gy, s = SPACING) {
+  return { sx: (gx - gy) * HALF_W * s, sy: -(gx + gy) * HALF_H * s };
+}
+
+function quadrant(gx, gy) {
+  if (gx > 0 && gy > 0) return 'q1'; // enterprise + complex
+  if (gx < 0 && gy > 0) return 'q2'; // enterprise + simple
+  if (gx < 0 && gy < 0) return 'q3'; // consumer + simple
+  return 'q4';                        // consumer + complex
+}
+
+const BIOME = {
+  q1: { fill: '#8fb6d0', side: '#6f96b0', label: 'Enterprise · Complex' },
+  q2: { fill: '#6fae6a', side: '#5a8e57', label: 'Enterprise · Simple' },
+  q3: { fill: '#b9d68a', side: '#8eb46a', label: 'Consumer · Simple' },
+  q4: { fill: '#e6c389', side: '#c69e64', label: 'Consumer · Complex' },
+};
+
+/* ── Project data ─────────────────────────────────────────────────────────── */
+const PROJECTS = [
+  // Q1 — Enterprise + Complex
+  { id:'impressio', gx:2,  gy:4,  scale:1.30, label:'Impressio',     sub:'AEON ROBOT · 2024',   glyph:'robot',     desc:'End-to-end UX/UI flows for casting MIAs on the Aeon humanoid robot — desktop and tablet. Included the World AI Summit live demo and tablet casting interface.',   tags:['Enterprise','Robotics','Tablet','B2B'] },
+  { id:'izak',      gx:6,  gy:4,  scale:1.50, label:'iZak',          sub:'3D SCANNING · LiDAR', glyph:'scanner',   desc:'UX research and design for a LiDAR + photogrammetry 3D space scanning workflow. Deep research into spatial computing, sensor use cases, and professional scanning tools.',            tags:['Enterprise','Spatial','UX Research','Mobile'] },
+  { id:'paas',      gx:4,  gy:2,  scale:1.20, label:'PaaS',          sub:'PROMPT LIBRARY',      glyph:'servers',   desc:'Prompt-as-a-service platform — library management, versioning, and evaluation surfaces. AI tooling for enterprise teams building on top of language models.',          tags:['Enterprise','AI','Dashboard','B2B'] },
+  { id:'snaplogic', gx:2,  gy:2,  scale:1.00, label:'SnapLogic',     sub:'CMS · CONNECTORS',    glyph:'connector', desc:'CMS surfaces and connector configuration UI for SnapLogic\'s integration platform. Weekly reviews, reworks, prototype, and full developer handoff.',                    tags:['Enterprise','Integration','B2B'] },
+  // Q2 — Enterprise + Simple
+  { id:'lms',       gx:-2, gy:2,  scale:0.90, label:'SnapLogic LMS', sub:'ACADEMY · 6 COURSES', glyph:'book',      desc:'Redesign of 6 internal SnapLogic Academy course pages. Ran weekly review cycles across stakeholders, built high-fidelity prototypes, and managed developer handoff.', tags:['Enterprise','Education','B2B'] },
+  { id:'holacracy', gx:-4, gy:4,  scale:1.15, label:'Holacracy',     sub:'INTERNAL TOOLING',    glyph:'circles',   desc:'Internal tooling for self-organising teams — circles, roles, tensions, and governance workflows. Where org design meets product design.',                            tags:['Enterprise','Internal','Governance'] },
+  { id:'kya',       gx:-2, gy:4,  scale:1.05, label:'KYA',           sub:'DOCUMENT WORKFLOW',   glyph:'docs',      desc:'Know-your-anything: document workflow and management surfaces for enterprise compliance teams. Information architecture, flows, and UI design.',                    tags:['Enterprise','Documents','Workflow'] },
+  // Q4 — Consumer + Complex
+  { id:'amplyfund', gx:2,  gy:-2, scale:1.10, label:'Amplyfund',     sub:'TV · FUNDRAISING',    glyph:'tv',        desc:'TV UI redesign for a crowdfunding and fundraising platform. Addressed core usability friction, updated design system alignment, and improved onboarding flows.',   tags:['Consumer','TV','Fundraising'] },
+  { id:'voteiq',    gx:4,  gy:-4, scale:1.35, label:'Vote IQ',       sub:'TV + WEB · CIVICS',   glyph:'ballot',    desc:'Civic engagement product spanning TV and web. Persona-based user flows for first-time voters; collaborated with Khushi and Cherry throughout design and research.', tags:['Consumer','TV','Web','Politics'] },
+  // Q3 — Consumer + Simple
+  { id:'mo',        gx:-2, gy:-2, scale:1.00, label:'Mo',            sub:'MOBILE · HEALTHCARE', glyph:'heart',     desc:'Information architecture and UX/UI prototyping for a consumer healthcare app. Internal pilot — attended CEO and Head of Design reviews, supported QA handoff.',   tags:['Consumer','Mobile','Healthcare'] },
+  { id:'clink',     gx:-4, gy:-2, scale:0.85, label:'Clink',         sub:'UI REDESIGN',         glyph:'bubble',    desc:'UI redesign alongside Moon and Ritesh. Onboarded Ritesh to the design team, led refinement sessions, and shaped the overall visual direction.',                  tags:['Consumer','Mobile','Social'] },
+  { id:'revee',     gx:-2, gy:-4, scale:0.95, label:'Revee',         sub:'FLOWS · QA',          glyph:'sprout',    desc:'User flow mapping, prototyping, QA handoff, and developer collaboration for Revee\'s internal pilot launch. First project from concept to shipped.',             tags:['Consumer','UX','Mobile'] },
+  // Easter egg — Architecture
+  { id:'arch',      gx:6,  gy:6,  scale:1.10, label:'Studio',        sub:'ARCHITECTURE · RES.', glyph:'cottage',   desc:'Residential architectural practice — the quiet cottage at the far edge of the map. Prachi brings the same spatial thinking she applies to physical buildings to every digital surface she designs.', tags:['Architecture','Residential','Spatial'] },
+];
+
+/* ── Glyphs ───────────────────────────────────────────────────────────────── */
+const Glyphs = {
+  robot: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="-14,4 0,12 14,4 0,-4" fill="#e0e6ec"/>
+      <polygon points="-14,4 0,-4 0,18 -14,26" fill="#b8c2cc"/>
+      <polygon points="14,4 0,-4 0,18 14,26" fill="#90a0b0"/>
+      <rect x="-10" y="-22" width="20" height="20" rx="4" fill="#3b6e8f"/>
+      <circle cx="-3" cy="-14" r="2.5" fill="#ffd56a"/>
+      <circle cx="5" cy="-14" r="2.5" fill="#ffd56a"/>
+    </g>
+  ),
+  scanner: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="-10,-2 0,4 10,-2 0,-8" fill="#d8d2c2"/>
+      <polygon points="-10,-2 0,-8 0,18 -10,24" fill="#a8a292"/>
+      <polygon points="10,-2 0,-8 0,18 10,24" fill="#807a6a"/>
+      <rect x="-3" y="-30" width="6" height="24" fill="#e87b5a"/>
+      <circle cx="0" cy="-32" r="5" fill="#ffd56a"/>
+      <path d="M0,-32 L-28,-18 M0,-32 L28,-18 M0,-32 L-34,-6" stroke="#ffd56a" strokeWidth="1" opacity="0.6"/>
+    </g>
+  ),
+  servers: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="-16,-2 0,6 16,-2 0,-10" fill="#3a4a5c"/>
+      <polygon points="-16,-2 0,-10 0,16 -16,24" fill="#2a3848"/>
+      <polygon points="16,-2 0,-10 0,16 16,24" fill="#1c2734"/>
+      <rect x="-13" y="-3" width="26" height="3" fill="#7ad0a5" opacity="0.85"/>
+      <rect x="-13" y="3" width="26" height="3" fill="#ffd56a" opacity="0.85"/>
+      <rect x="-13" y="9" width="26" height="3" fill="#7ad0a5" opacity="0.6"/>
+    </g>
+  ),
+  connector: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="-18,0 0,10 18,0 0,-10" fill="#f0d4a4"/>
+      <circle cx="-8" cy="-2" r="5" fill="#3b6e8f"/>
+      <circle cx="8" cy="2" r="5" fill="#d96a4a"/>
+      <path d="M-3,0 L3,0" stroke="#2a2622" strokeWidth="2"/>
+    </g>
+  ),
+  book: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="-20,2 0,12 20,2 0,-8" fill="#f6efde"/>
+      <polygon points="-14,-2 0,5 14,-2 0,-9" fill="#d96a4a"/>
+      <line x1="-8" y1="0" x2="0" y2="4" strokeWidth="1"/>
+      <line x1="8" y1="0" x2="0" y2="4" strokeWidth="1"/>
+    </g>
+  ),
+  tv: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <rect x="-22" y="-18" width="44" height="28" rx="3" fill="#2a2a2a"/>
+      <rect x="-19" y="-15" width="38" height="22" rx="1" fill="#7ab9d8"/>
+      <line x1="-12" y1="14" x2="12" y2="14" strokeWidth="2"/>
+      <line x1="0" y1="10" x2="0" y2="14" strokeWidth="2"/>
+    </g>
+  ),
+  heart: () => (
+    <g stroke="#2a2622" strokeWidth="1.5">
+      <path d="M0,8 C-16,-2 -14,-16 -4,-14 C0,-13 0,-10 0,-8 C0,-10 0,-13 4,-14 C14,-16 16,-2 0,8Z" fill="#e87b5a"/>
+    </g>
+  ),
+  bubble: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <rect x="-22" y="-14" width="40" height="22" rx="6" fill="#a8d1e8"/>
+      <polygon points="-8,8 -2,14 2,8" fill="#a8d1e8"/>
+      <circle cx="-10" cy="-3" r="2" fill="#2a2622"/>
+      <circle cx="-2" cy="-3" r="2" fill="#2a2622"/>
+      <circle cx="6" cy="-3" r="2" fill="#2a2622"/>
+    </g>
+  ),
+  ballot: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="-18,-4 -18,12 0,22 18,12 18,-4 0,-14" fill="#e8e3d3"/>
+      <rect x="-3" y="-18" width="6" height="6" fill="#d96a4a"/>
+      <path d="M-8,4 L-3,8 L6,-2" strokeWidth="2" fill="none"/>
+    </g>
+  ),
+  sprout: () => (
+    <g stroke="#2a2622" strokeWidth="1.5">
+      <path d="M0,14 L0,-8" strokeWidth="2"/>
+      <path d="M0,-2 Q-16,-2 -16,-16 Q-2,-14 0,-2" fill="#7ad0a5"/>
+      <path d="M0,-8 Q14,-10 16,-22 Q4,-22 0,-8" fill="#7ad0a5"/>
+    </g>
+  ),
+  circles: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" fill="none">
+      <circle cx="0" cy="0" r="20" stroke="#3b6e8f" strokeWidth="2"/>
+      <circle cx="-8" cy="-4" r="7" fill="#e87b5a"/>
+      <circle cx="9" cy="2" r="6" fill="#7ad0a5"/>
+      <circle cx="2" cy="10" r="5" fill="#ffd56a"/>
+    </g>
+  ),
+  docs: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <rect x="-16" y="-12" width="22" height="28" rx="2" fill="#fbf7ee"/>
+      <rect x="-12" y="-16" width="22" height="28" rx="2" fill="#f6efde"/>
+      <line x1="-8" y1="-10" x2="6" y2="-10"/>
+      <line x1="-8" y1="-5" x2="6" y2="-5"/>
+      <line x1="-8" y1="0" x2="2" y2="0"/>
+    </g>
+  ),
+  cottage: () => (
+    <g stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round">
+      <polygon points="-22,-2 0,8 22,-2 0,-12" fill="#f0e2c4"/>
+      <polygon points="-22,-2 0,8 0,24 -22,14" fill="#d4c290"/>
+      <polygon points="22,-2 0,8 0,24 22,14" fill="#a89060"/>
+      <polygon points="-18,-12 0,-24 18,-12 0,-2" fill="#d96a4a"/>
+      <polygon points="-18,-12 0,-2 0,4 -10,0" fill="#a04a30"/>
+      <polygon points="18,-12 0,-2 0,4 10,0" fill="#7a3622"/>
+      <rect x="-3" y="2" width="6" height="10" fill="#5c3820"/>
+    </g>
+  ),
+};
+
+/* ── Road network as SVG paths ────────────────────────────────────────────── */
+function RoadLayer() {
+  const pos = (gx, gy) => {
+    const { sx, sy } = gridToScreen(gx, gy, SPACING);
+    return [sx, sy];
+  };
+
+  const pathD = (gridPts) =>
+    gridPts.map(([gx, gy], i) => {
+      const [x, y] = pos(gx, gy);
+      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }).join(' ');
+
+  // Main cross-roads
+  const mainX = [[-7, 0], [7, 0]];
+  const mainY = [[0, -6], [0, 6]];
+
+  // Arterial roads (secondary network connecting project tiles)
+  const arteries = [
+    // Horizontals (parallel to X-axis, constant gy)
+    [[-4, 2], [6, 2]],    // enterprise row
+    [[-4, -2], [4, -2]],  // consumer row
+    [[-4, 4], [5, 4]],    // deep enterprise
+    [[-2, -4], [4, -4]],  // deep consumer
+    // Verticals (parallel to Y-axis, constant gx)
+    [[2, -1], [2, 4]],    // gx=2 connector
+    [[-2, -4], [-2, 4]],  // gx=-2 connector
+    [[4, -4], [4, 3]],    // gx=4 connector
+    [[6, 0], [6, 6]],     // gx=6 (to iZak + Studio)
+    [[-4, -2], [-4, 5]],  // gx=-4 connector
+  ];
+
+  const [ix, iy] = pos(0, 0);
+
+  // Stroke technique: outer dark edge → inner road fill → centre dash
+  const MAIN_EDGE  = 44;
+  const MAIN_FILL  = 38;
+  const ART_EDGE   = 26;
+  const ART_FILL   = 22;
+  const ROAD_COLOR = '#d6cfbe';
+  const EDGE_COLOR = '#b8b0a0';
+  const DASH_COLOR = 'rgba(255,255,255,0.55)';
+
+  return (
+    <svg
+      width="1" height="1"
+      style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible', pointerEvents: 'none', zIndex: 0 }}
+    >
+      {/* ── Arterials: edge → fill → dash ── */}
+      {arteries.map((pts, i) => (
+        <path key={`ae-${i}`} d={pathD(pts)} fill="none"
+          stroke={EDGE_COLOR} strokeWidth={ART_EDGE} strokeLinecap="round" strokeLinejoin="round"/>
+      ))}
+      {arteries.map((pts, i) => (
+        <path key={`af-${i}`} d={pathD(pts)} fill="none"
+          stroke={ROAD_COLOR} strokeWidth={ART_FILL} strokeLinecap="round" strokeLinejoin="round"/>
+      ))}
+      {arteries.map((pts, i) => (
+        <path key={`ad-${i}`} d={pathD(pts)} fill="none"
+          stroke={DASH_COLOR} strokeWidth="1.2" strokeLinecap="round" strokeDasharray="5 9"/>
+      ))}
+
+      {/* ── Main roads: edge → fill → double dashes ── */}
+      {[mainX, mainY].map((pts, i) => (
+        <path key={`me-${i}`} d={pathD(pts)} fill="none"
+          stroke={EDGE_COLOR} strokeWidth={MAIN_EDGE} strokeLinecap="round"/>
+      ))}
+      {[mainX, mainY].map((pts, i) => (
+        <path key={`mf-${i}`} d={pathD(pts)} fill="none"
+          stroke={ROAD_COLOR} strokeWidth={MAIN_FILL} strokeLinecap="round"/>
+      ))}
+      {[mainX, mainY].map((pts, i) => (
+        <path key={`md-${i}`} d={pathD(pts)} fill="none"
+          stroke={DASH_COLOR} strokeWidth="1.5" strokeLinecap="round" strokeDasharray="10 10"/>
+      ))}
+
+      {/* ── Crossroads intersection ── */}
+      <circle cx={ix} cy={iy} r={30} fill={EDGE_COLOR}/>
+      <circle cx={ix} cy={iy} r={26} fill={ROAD_COLOR}/>
+      <circle cx={ix} cy={iy} r={5}  fill={EDGE_COLOR}/>
+    </svg>
+  );
+}
+
+/* ── Isometric tile diamond ───────────────────────────────────────────────── */
+function IsoTile({ biome, glyph, size = 1 }) {
+  const W = HALF_W * size;
+  const H = HALF_H * size;
+  const { fill, side } = BIOME[biome] || { fill: '#fbf7ee', side: '#d8d2c2' };
+  const top = `0,${-H} ${W},0 0,${H} ${-W},0`;
+  const Glyph = glyph && Glyphs[glyph];
+  return (
+    <svg width={W * 2 + 4} height={H * 2 + 40}
+         viewBox={`${-W - 2} ${-H - 38} ${W * 2 + 4} ${H * 2 + 40}`}>
+      <polygon points={top} fill={fill} stroke="#2a2622" strokeWidth="1.5" strokeLinejoin="round"/>
+      {Glyph && (
+        <g transform={`scale(${Math.min(1.3, 0.55 + size * 0.4)})`}>
+          <Glyph/>
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/* ── Project overlay — immersive full-screen takeover ─────────────────────── */
+function ProjectOverlay({ tile, tileRect, onClose }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    // Two rAF to let the browser paint the start state before transitioning
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setOpen(true)));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = () => {
+    setOpen(false);
+    setTimeout(onClose, 650);
+  };
+
+  const q = quadrant(tile.gx, tile.gy);
+  const { fill: accent, label: qLabel } = BIOME[q] || {};
+
+  const overlayStyle = open
+    ? { top: 0, left: 0, width: '100%', height: '100%', borderRadius: 0 }
+    : {
+        top: tileRect.top,
+        left: tileRect.left,
+        width: Math.max(tileRect.width, 80),
+        height: Math.max(tileRect.height, 60),
+        borderRadius: 14,
+      };
+
+  return ReactDOM.createPortal(
+    <>
+      {/* Frosted backdrop — click to close */}
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 45,
+          background: open ? 'rgba(251,247,238,0.55)' : 'rgba(251,247,238,0)',
+          backdropFilter: open ? 'blur(4px)' : 'none',
+          transition: 'background 550ms, backdrop-filter 550ms',
+          pointerEvents: open ? 'auto' : 'none',
+        }}
+        onClick={handleClose}
+      />
+
+      {/* Expanding card */}
+      <div className="proj-overlay" style={overlayStyle}>
+        {/* Accent colour bar at top */}
+        <div
+          className={`proj-accent-bar ${open ? 'visible' : ''}`}
+          style={{ background: accent }}
+        />
+
+        {/* Scrollable content */}
+        <div className={`proj-content ${open ? 'visible' : ''}`}>
+          <div className="proj-eyebrow">{qLabel} · {tile.sub}</div>
+          <div className="proj-title">{tile.label}</div>
+
+          <div className="proj-divider"/>
+
+          <div className="proj-body">
+            <div>
+              <div className="proj-desc">{tile.desc}</div>
+            </div>
+            <div className="proj-meta">
+              <div className="proj-meta-row">
+                <label>Disciplines</label>
+                <div className="proj-tags">
+                  {(tile.tags || []).map(t => (
+                    <span key={t} className="proj-tag">{t}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="proj-meta-row">
+                <label>Quadrant</label>
+                <div style={{ fontSize: 14, color: '#2a2622', lineHeight: 1.5 }}>{qLabel}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Image placeholders */}
+          <div className="proj-images single">
+            <div className="proj-placeholder wide">
+              ↗&nbsp;&nbsp;Project screenshots
+            </div>
+          </div>
+          <div className="proj-images" style={{ marginTop: 14 }}>
+            <div className="proj-placeholder square">↗&nbsp; Flows</div>
+            <div className="proj-placeholder square">↗&nbsp; Prototype</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Close button (fixed, always on top) */}
+      <button
+        className={`proj-close ${open ? 'visible' : ''}`}
+        onClick={handleClose}
+      >
+        ×
+      </button>
+    </>,
+    document.body
+  );
+}
+
+/* ── Hero lockup ──────────────────────────────────────────────────────────── */
+function Hero({ docked }) {
+  return (
+    <div className={`hero ${docked ? 'dock' : 'center'}`}>
+      <div className="hero-row">
+        <div className="hero-name">Prachi</div>
+        <div className="hero-box">Mittal</div>
+      </div>
+      <div className="hero-tag">Product Designer · Architect</div>
+    </div>
+  );
+}
+
+/* ── About panel ──────────────────────────────────────────────────────────── */
+function AboutPanel() {
+  return (
+    <div className="about-panel">
+      <h4>About</h4>
+      <p>
+        Prachi designs digital products and physical spaces. Twelve shipped
+        surfaces below — mapped by audience and complexity. The cottage in
+        the far corner is her architecture practice.
+      </p>
+      <div className="about-links">
+        <a href="mailto:hello@prachimittal.com" className="solid">hello@</a>
+        <a href="#" className="ghost">Resume</a>
+        <a href="#" className="ghost">LinkedIn</a>
+        <a href="#" className="ghost">Dribbble</a>
+      </div>
+    </div>
+  );
+}
+
+/* ── Isometric world ──────────────────────────────────────────────────────── */
+function World({ onSelect }) {
+  const stageRef = useRef(null);
+  const tileRefs = useRef({});
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [hovered, setHovered] = useState(null);
+  const [docked, setDocked] = useState(false);
+  const drag = useRef({ active: false, startX: 0, startY: 0, ox: 0, oy: 0, moved: false });
+
+  useEffect(() => {
+    const t = setTimeout(() => setDocked(true), 2400);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Painter's order: high gx+gy first (back of scene)
+  const sorted = useMemo(() =>
+    [...PROJECTS].sort((a, b) => (b.gx + b.gy) - (a.gx + a.gy))
+  , []);
+
+  // Hover-driven jigsaw separation
+  const updateSep = useCallback((mx, my) => {
+    PROJECTS.forEach(t => {
+      const el = tileRefs.current[t.id];
+      if (!el) return;
+      const { sx, sy } = gridToScreen(t.gx, t.gy, SPACING);
+      const dist = Math.hypot(t.gx, t.gy) || 1;
+      const rx = (t.gx - t.gy) / Math.max(0.5, dist);
+      const ry = -(t.gx + t.gy) / (2 * Math.max(0.5, dist));
+      const d = Math.hypot(sx - mx, sy - my);
+      const sep = 4 + Math.max(0, 1 - d / 310) * 22;
+      el.style.setProperty('--ox', `${rx * sep}px`);
+      el.style.setProperty('--oy', `${ry * sep}px`);
+    });
+  }, []);
+
+  const resetSep = useCallback(() => {
+    Object.values(tileRefs.current).forEach(el => {
+      if (!el) return;
+      el.style.setProperty('--ox', '0px');
+      el.style.setProperty('--oy', '0px');
+    });
+  }, []);
+
+  const onPointerDown = useCallback(e => {
+    if (e.button !== 0 && e.pointerType !== 'touch') return;
+    drag.current = { active: true, startX: e.clientX, startY: e.clientY, ox: pan.x, oy: pan.y, moved: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [pan]);
+
+  const onPointerMove = useCallback(e => {
+    const ds = drag.current;
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (ds.active) {
+      const dx = e.clientX - ds.startX, dy = e.clientY - ds.startY;
+      if (!ds.moved && Math.hypot(dx, dy) > 4) { ds.moved = true; setDragging(true); }
+      if (ds.moved) setPan({ x: ds.ox + dx, y: ds.oy + dy });
+    } else {
+      const rect = stage.getBoundingClientRect();
+      updateSep(e.clientX - rect.left - rect.width / 2 - pan.x,
+                e.clientY - rect.top - rect.height / 2 - pan.y);
+    }
+  }, [pan, updateSep]);
+
+  const onPointerUp = useCallback(e => {
+    const ds = drag.current;
+    ds.active = false;
+    if (ds.moved) { setDragging(false); setTimeout(() => { ds.moved = false; }, 0); }
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
+  }, []);
+
+  const handleTileClick = useCallback((tile) => {
+    if (drag.current.moved) return;
+    const el = tileRefs.current[tile.id];
+    if (!el) return;
+    onSelect(tile, el.getBoundingClientRect());
+  }, [onSelect]);
+
+  return (
+    <div
+      ref={stageRef}
+      className={`world-stage ${dragging ? 'dragging' : ''}`}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      onPointerLeave={() => { setHovered(null); resetSep(); }}
+      onDoubleClick={() => setPan({ x: 0, y: 0 })}
+    >
+      {/* Ambient clouds */}
+      <div className="cloud" style={{ top: '11%', animationDuration: '74s', animationDelay: '-8s' }}/>
+      <div className="cloud" style={{ top: '22%', left: '-280px', opacity: 0.55, animationDuration: '98s', animationDelay: '-34s' }}/>
+      <div className="cloud" style={{ top: '68%', opacity: 0.38, animationDuration: '118s', animationDelay: '-56s' }}/>
+
+      {/* Panning camera */}
+      <div
+        className="camera"
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}
+      >
+        {/* Roads first (rendered behind tiles) */}
+        <RoadLayer/>
+
+        {/* Project tiles in painter's order */}
+        {sorted.map(tile => {
+          const { sx, sy } = gridToScreen(tile.gx, tile.gy, SPACING);
+          const q = quadrant(tile.gx, tile.gy);
+          const size = tile.scale || 1;
+          const lift = hovered === tile.id ? 22 : 0;
+          return (
+            <div
+              key={tile.id}
+              ref={el => { tileRefs.current[tile.id] = el; }}
+              className="iso-tile"
+              style={{
+                '--sx': `${sx}px`,
+                '--sy': `${sy}px`,
+                '--lift': `${lift}px`,
+                zIndex: Math.round(-(tile.gx + tile.gy) * 10 + 500),
+              }}
+              onPointerEnter={() => { if (!drag.current.active) setHovered(tile.id); }}
+              onPointerLeave={() => setHovered(null)}
+              onClick={() => handleTileClick(tile)}
+            >
+              <IsoTile biome={q} glyph={tile.glyph} size={size}/>
+              <div className="tile-label" style={{ fontSize: `${9 + size * 1.6}px` }}>
+                {tile.label}
+                <span className="tile-sub">{tile.sub}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Axis corner labels */}
+      <div className="axis-label tl"><span>↑</span> Enterprise</div>
+      <div className="axis-label bl">Consumer <span>↓</span></div>
+      <div className="axis-label rt">Complex <span>→</span></div>
+      <div className="axis-label lt"><span>←</span> Simple</div>
+
+      <Hero docked={docked}/>
+      <AboutPanel/>
+
+      <div className="hint">
+        <span className="hint-dot"/>
+        Drag to pan · Double-click to recentre · Click a tile to explore
+      </div>
+    </div>
+  );
+}
+
+/* ── App ──────────────────────────────────────────────────────────────────── */
+function App() {
+  const [overlay, setOverlay] = useState(null);
+  return (
+    <div style={{ height: '100%' }}>
+      <World onSelect={(tile, rect) => setOverlay({ tile, rect })}/>
+      {overlay && (
+        <ProjectOverlay
+          tile={overlay.tile}
+          tileRect={overlay.rect}
+          onClose={() => setOverlay(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
