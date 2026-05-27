@@ -24,6 +24,9 @@ export interface BuildingDef {
   roofStyle: RoofStyle
 }
 
+// Vertical scale of the world group in 2D/iso view (1 = full 3D height).
+export const ISO_FLATTEN = 0.3
+
 export const BUILDINGS: BuildingDef[] = PROJECTS.map((p) => {
   const height = heightFor(p.gx, p.gy, p.scale, p.height)
   const footprint = footprintFor(p.scale, p.footprint)

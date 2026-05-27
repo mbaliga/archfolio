@@ -4,8 +4,8 @@ import { Color, Group, MeshStandardMaterial, type Object3D } from 'three'
 import { easing } from 'maath'
 import { Label } from './Label'
 import { bodyColor, roofColor, DIM_GREY, layerColor } from './lib/cityTheme'
-import type { BuildingDef } from './lib/cityModel'
-import type { Appearance, Project, RoofStyle } from '../types'
+import { ISO_FLATTEN, type BuildingDef } from './lib/cityModel'
+import type { Appearance, Project, RoofStyle, ViewMode } from '../types'
 
 const DIM = new Color(DIM_GREY)
 
@@ -14,6 +14,7 @@ interface BuildingProps {
   hovered: boolean
   appearance: Appearance
   showLabel: boolean
+  view: ViewMode
   onHover: (id: string | null) => void
   onSelect: (project: Project, object: Object3D) => void
 }
@@ -40,9 +41,10 @@ function massing(w: number, height: number, roof: RoofStyle): Tier[] {
   return [{ size: [w, height, w], y: height / 2 }]
 }
 
-export function Building({ def, hovered, appearance, showLabel, onHover, onSelect }: BuildingProps) {
+export function Building({ def, hovered, appearance, showLabel, view, onHover, onSelect }: BuildingProps) {
   const { footprint: w, height, district, roofStyle, position, project } = def
   const liftRef = useRef<Group>(null)
+  const labelRef = useRef<Group>(null)
   const gl = useThree((s) => s.gl)
 
   const baseEmissive = district === 'glass' ? 0.14 : 0.05
@@ -86,6 +88,8 @@ export function Building({ def, hovered, appearance, showLabel, onHover, onSelec
       }
     }
     if (liftRef.current) easing.damp(liftRef.current.position, 'y', (hovered ? 1.8 : 0) + liftBonus, 0.12, dt)
+    // Cancel the world's iso y-flatten on the label so the wordmark doesn't squash.
+    if (labelRef.current) easing.damp(labelRef.current.scale, 'y', view === 'iso' ? 1 / ISO_FLATTEN : 1, 0.22, dt)
     easing.dampC(body.color, target, 0.18, dt)
     easing.damp(body, 'emissiveIntensity', em, 0.15, dt)
   })
@@ -142,7 +146,13 @@ export function Building({ def, hovered, appearance, showLabel, onHover, onSelec
           </>
         )}
 
-        {showLabel && <Label project={project} y={signY} footprint={w} />}
+        {showLabel && (
+          <group position={[0, signY, 0]}>
+            <group ref={labelRef}>
+              <Label project={project} footprint={w} />
+            </group>
+          </group>
+        )}
       </group>
     </group>
   )

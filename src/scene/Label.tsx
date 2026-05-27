@@ -8,18 +8,16 @@ const PAPER = '#fbf7ee'
 
 interface LabelProps {
   project: Project
-  /** Local Y (above the roof) to float the sign at. */
-  y: number
   footprint: number
 }
 
 // A billboarded rooftop sign that always faces the camera. Swap seam: when a
 // project has `logo`, the wordmark is replaced by the logo image — no other
-// change needed.
-export function Label({ project, y, footprint }: LabelProps) {
+// change needed. Positioned by the caller (a wrapping group owns its height).
+export function Label({ project, footprint }: LabelProps) {
   const width = Math.max(footprint * 1.7, 6)
   return (
-    <Billboard position={[0, y, 0]}>
+    <Billboard>
       {project.logo ? (
         <LogoBoard logo={project.logo} width={width} />
       ) : (

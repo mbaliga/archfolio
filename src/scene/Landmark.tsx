@@ -3,8 +3,8 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import { Group, MeshStandardMaterial, type Object3D } from 'three'
 import { easing } from 'maath'
-import type { Landmark as LandmarkData, LandmarkKind } from '../types'
-import type { LandmarkDef } from './lib/cityModel'
+import type { Landmark as LandmarkData, LandmarkKind, ViewMode } from '../types'
+import { ISO_FLATTEN, type LandmarkDef } from './lib/cityModel'
 import interBold from '@fontsource/inter/files/inter-latin-800-normal.woff'
 
 const CIVIC_GREY = '#bcb6a8'
@@ -13,13 +13,15 @@ interface LandmarkProps {
   def: LandmarkDef
   hovered: boolean
   showLabel: boolean
+  view: ViewMode
   onHover: (id: string | null) => void
   onSelect: (landmark: LandmarkData, object: Object3D) => void
 }
 
-export function Landmark({ def, hovered, showLabel, onHover, onSelect }: LandmarkProps) {
+export function Landmark({ def, hovered, showLabel, view, onHover, onSelect }: LandmarkProps) {
   const { landmark, footprint: w } = def
   const liftRef = useRef<Group>(null)
+  const labelRef = useRef<Group>(null)
   const gl = useThree((s) => s.gl)
 
   const grey = useMemo(
@@ -36,6 +38,8 @@ export function Landmark({ def, hovered, showLabel, onHover, onSelect }: Landmar
 
   useFrame((_, dt) => {
     if (liftRef.current) easing.damp(liftRef.current.position, 'y', hovered ? 1.2 : 0, 0.12, dt)
+    // Cancel the world's iso y-flatten on the sign so it doesn't squash.
+    if (labelRef.current) easing.damp(labelRef.current.scale, 'y', view === 'iso' ? 1 / ISO_FLATTEN : 1, 0.22, dt)
     easing.damp(grey, 'emissiveIntensity', hovered ? 0.2 : 0, 0.12, dt)
   })
 
@@ -64,7 +68,13 @@ export function Landmark({ def, hovered, showLabel, onHover, onSelect }: Landmar
           <meshStandardMaterial color="#9a9488" roughness={0.95} />
         </mesh>
         <Silhouette kind={landmark.kind} w={w} grey={grey} accent={landmark.accent} />
-        {showLabel && <PlaceSign label={landmark.label} accent={landmark.accent} y={signY} w={w} />}
+        {showLabel && (
+          <group position={[0, signY, 0]}>
+            <group ref={labelRef}>
+              <PlaceSign label={landmark.label} accent={landmark.accent} w={w} />
+            </group>
+          </group>
+        )}
       </group>
     </group>
   )
@@ -199,11 +209,11 @@ function Silhouette({
   }
 }
 
-function PlaceSign({ label, accent, y, w }: { label: string; accent: string; y: number; w: number }) {
+function PlaceSign({ label, accent, w }: { label: string; accent: string; w: number }) {
   const width = Math.max(w * 0.95, 4)
   const h = 1.3
   return (
-    <Billboard position={[0, y, 0]}>
+    <Billboard>
       <mesh>
         <planeGeometry args={[width, h]} />
         <meshBasicMaterial color={accent} toneMapped={false} />

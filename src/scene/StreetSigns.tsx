@@ -8,6 +8,16 @@ const ARM_Y = 7.6
 const ARM_LEN = 6.4
 const ARM_OFF = 3.9
 
+// The four avenues, shared by the 3D fingerpost and the 2D flat labels.
+// Axis meaning: +X = complex, -X = simple, -Z = enterprise, +Z = consumer.
+const AVENUES = [
+  { name: 'Complex Way', axis: 'x', dir: 1 },
+  { name: 'Simple Lane', axis: 'x', dir: -1 },
+  { name: 'Enterprise Ave', axis: 'z', dir: -1 },
+  { name: 'Consumer St', axis: 'z', dir: 1 },
+] as const
+const AVENUE_LABEL_R = 24
+
 // In-world wayfinding: a fingerpost at the roundabout names the four avenues.
 // Fixed-oriented (not billboarded) so the signs read as part of the city; each
 // arm carries text on both faces so it's legible from either approach.
@@ -25,10 +35,45 @@ export function StreetSigns() {
         <meshStandardMaterial color={POST} roughness={0.6} metalness={0.3} />
       </mesh>
 
-      <ArmX name="Complex Way" dir={1} />
-      <ArmX name="Simple Lane" dir={-1} />
-      <ArmZ name="Enterprise Ave" dir={-1} />
-      <ArmZ name="Consumer St" dir={1} />
+      {AVENUES.map((a) =>
+        a.axis === 'x' ? (
+          <ArmX key={a.name} name={a.name} dir={a.dir} />
+        ) : (
+          <ArmZ key={a.name} name={a.name} dir={a.dir} />
+        ),
+      )}
+    </group>
+  )
+}
+
+// Flat, on-the-ground avenue names for 2D/iso view, where the 3D fingerpost is
+// hidden. Text lies in the XZ plane, so the world's vertical flatten can't
+// squash it. Each label runs along its avenue.
+export function AvenueLabels() {
+  return (
+    <group>
+      {AVENUES.map((a) => {
+        const pos: [number, number, number] =
+          a.axis === 'x' ? [AVENUE_LABEL_R * a.dir, 0.3, 0] : [0, 0.3, AVENUE_LABEL_R * a.dir]
+        const yaw = a.axis === 'z' ? Math.PI / 2 : 0
+        return (
+          <group key={a.name} position={pos} rotation={[0, yaw, 0]}>
+            <Text
+              font={interSemi}
+              rotation={[-Math.PI / 2, 0, 0]}
+              fontSize={2.4}
+              anchorX="center"
+              anchorY="middle"
+              letterSpacing={0.06}
+              color={INK}
+              outlineWidth={0.05}
+              outlineColor={PAPER}
+            >
+              {a.name}
+            </Text>
+          </group>
+        )
+      })}
     </group>
   )
 }

@@ -4,7 +4,7 @@ import type { MapLayer } from '../types'
 // Legend for the active map layer, shown bottom-center.
 export function Legend({ layer }: { layer: MapLayer }) {
   return (
-    <div className="pointer-events-none absolute bottom-[calc(132px+env(safe-area-inset-bottom))] left-1/2 z-20 max-w-[70vw] -translate-x-1/2 rounded-[18px] border border-black/10 bg-white/90 px-[14px] py-[8px] shadow-[0_4px_18px_rgba(0,0,0,0.12)] backdrop-blur-md sm:bottom-[58px] sm:max-w-none sm:rounded-full">
+    <div className="pointer-events-none absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-20 max-w-[70vw] -translate-x-1/2 rounded-[18px] border border-black/10 bg-white/90 px-[14px] py-[8px] shadow-[0_4px_18px_rgba(0,0,0,0.12)] backdrop-blur-md sm:bottom-[58px] sm:max-w-none sm:rounded-full">
       {layer === 'effort' ? <EffortLegend /> : <OwnershipLegend />}
     </div>
   )

@@ -8,8 +8,8 @@ import { Props } from './Props'
 import { CityFill } from './CityFill'
 import { Building } from './Building'
 import { Landmark } from './Landmark'
-import { StreetSigns } from './StreetSigns'
-import { BUILDINGS, LANDMARK_DEFS } from './lib/cityModel'
+import { StreetSigns, AvenueLabels } from './StreetSigns'
+import { BUILDINGS, LANDMARK_DEFS, ISO_FLATTEN } from './lib/cityModel'
 import type { Appearance, LayerState, ViewMode, Project, Landmark as LandmarkData } from '../types'
 
 interface CityWorldProps {
@@ -64,7 +64,7 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
 
   // 2D/iso view flattens the city vertically.
   useFrame((_, dt) => {
-    if (worldRef.current) easing.damp(worldRef.current.scale, 'y', view === 'iso' ? 0.3 : 1, 0.22, dt)
+    if (worldRef.current) easing.damp(worldRef.current.scale, 'y', view === 'iso' ? ISO_FLATTEN : 1, 0.22, dt)
   })
 
   const handleSelect = useCallback(
@@ -81,8 +81,9 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
     [camera, gl, onSelectLandmark],
   )
 
-  // Floating wordmarks/signs would squish when flattened, so hide them in 2D.
-  const showLabel = layers.showLabels && view === '3d'
+  // The user toggle gates the name labels; they stay visible in 2D too, where
+  // Building / Landmark counter-scale them so the flatten doesn't squash them.
+  const showLabel = layers.showLabels
 
   return (
     <group ref={worldRef}>
@@ -91,6 +92,7 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
       <Props />
       {layers.showScenery && <CityFill />}
       {view === '3d' && <StreetSigns />}
+      {view === 'iso' && <AvenueLabels />}
       {BUILDINGS.map((def) => (
         <Building
           key={def.project.id}
@@ -98,6 +100,7 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
           hovered={hovered === def.project.id}
           appearance={appearance}
           showLabel={showLabel}
+          view={view}
           onHover={setHovered}
           onSelect={handleSelect}
         />
@@ -109,6 +112,7 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
             def={def}
             hovered={hovered === def.landmark.id}
             showLabel={showLabel}
+            view={view}
             onHover={setHovered}
             onSelect={handleSelectLandmark}
           />

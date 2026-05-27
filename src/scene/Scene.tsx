@@ -4,7 +4,6 @@ import { Loader } from '@react-three/drei'
 import { CameraRig, DEFAULT_CAMERA_TUPLE, type FocusTarget } from './CameraRig'
 import { CityWorld } from './CityWorld'
 import { Hero } from '../components/Hero'
-import { AboutPanel } from '../components/AboutPanel'
 import { SKY } from './lib/cityTheme'
 import type { Appearance, CameraCmd, LayerState, ViewMode, Project, Landmark } from '../types'
 
@@ -69,7 +68,6 @@ export function Scene({ appearance, layers, view, focus, cameraCmd, onSelect, on
 
       {/* DOM HUD over the canvas */}
       <Hero docked={docked} />
-      <AboutPanel />
       <Hint />
     </div>
   )
