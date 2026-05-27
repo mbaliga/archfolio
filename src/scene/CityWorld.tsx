@@ -8,7 +8,11 @@ import { Props } from './Props'
 import { CityFill } from './CityFill'
 import { Building } from './Building'
 import { Landmark } from './Landmark'
-import { StreetSigns, AvenueLabels } from './StreetSigns'
+import { StreetSigns, AvenueLabels, GatewayLabels } from './StreetSigns'
+import { Mountains } from './Mountains'
+import { Waterfall } from './Waterfall'
+import { Birds } from './Birds'
+import { ClockTower } from './ClockTower'
 import { BUILDINGS, LANDMARK_DEFS, ISO_FLATTEN } from './lib/cityModel'
 import type { Appearance, LayerState, ViewMode, Project, Landmark as LandmarkData } from '../types'
 
@@ -86,14 +90,19 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
   const showLabel = layers.showLabels
 
   return (
-    <group ref={worldRef}>
-      <Ground />
-      <Roads />
-      <Props />
-      {layers.showScenery && <CityFill />}
-      {view === '3d' && <StreetSigns />}
-      {view === 'iso' && <AvenueLabels />}
-      {BUILDINGS.map((def) => (
+    <>
+      <group ref={worldRef}>
+        <Ground />
+        <Roads />
+        <Props />
+        <Mountains />
+        {layers.showScenery && <CityFill />}
+        {view === '3d' && <StreetSigns />}
+        {view === '3d' && <Waterfall />}
+        {view === '3d' && <Birds />}
+        {view === '3d' && <ClockTower />}
+        {view === 'iso' && <AvenueLabels />}
+        {BUILDINGS.map((def) => (
         <Building
           key={def.project.id}
           def={def}
@@ -117,6 +126,10 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
             onSelect={handleSelectLandmark}
           />
         ))}
-    </group>
+      </group>
+
+      {/* Outside the iso-flatten group so the markers stay upright in 2D. */}
+      <GatewayLabels />
+    </>
   )
 }

@@ -37,10 +37,10 @@ export function Landmark({ def, hovered, showLabel, view, onHover, onSelect }: L
   useEffect(() => () => grey.dispose(), [grey])
 
   useFrame((_, dt) => {
-    if (liftRef.current) easing.damp(liftRef.current.position, 'y', hovered ? 1.2 : 0, 0.12, dt)
     // Cancel the world's iso y-flatten on the sign so it doesn't squash.
     if (labelRef.current) easing.damp(labelRef.current.scale, 'y', view === 'iso' ? 1 / ISO_FLATTEN : 1, 0.22, dt)
-    easing.damp(grey, 'emissiveIntensity', hovered ? 0.2 : 0, 0.12, dt)
+    // Hover glows the landmark rather than lifting it.
+    easing.damp(grey, 'emissiveIntensity', hovered ? 0.38 : 0, 0.12, dt)
   })
 
   const signY = landmarkTop(landmark.kind, w) + 1.5

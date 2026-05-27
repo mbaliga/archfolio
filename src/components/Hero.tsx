@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useIsMobile } from '../lib/useIsMobile'
+import { getHyderabadTime } from '../lib/sky'
 
 const LINKS = [
   { label: 'hello@', href: 'mailto:hello@prachimittal.com', solid: true },
@@ -20,7 +21,7 @@ const linkClass = (solid: boolean) =>
   ].join(' ')
 
 function greeting(): string {
-  const h = new Date().getHours()
+  const h = getHyderabadTime().hour
   if (h < 5) return 'Good night'
   if (h < 12) return 'Good morning'
   if (h < 17) return 'Good afternoon'

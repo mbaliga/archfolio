@@ -76,7 +76,8 @@ export function Building({ def, hovered, appearance, showLabel, view, onHover, o
 
   useFrame((_, dt) => {
     let target = baseColor
-    let em = hovered ? baseEmissive + 0.32 : baseEmissive
+    // Hover no longer lifts the tower — it glows instead.
+    let em = hovered ? baseEmissive + 0.5 : baseEmissive
     let liftBonus = 0
     if (appearance.mode === 'layer' && layerCol) {
       target = layerCol
@@ -87,7 +88,8 @@ export function Building({ def, hovered, appearance, showLabel, view, onHover, o
         em = 0
       }
     }
-    if (liftRef.current) easing.damp(liftRef.current.position, 'y', (hovered ? 1.8 : 0) + liftBonus, 0.12, dt)
+    // liftBonus is the tag-match emphasis (a matching tower rises); hover doesn't.
+    if (liftRef.current) easing.damp(liftRef.current.position, 'y', liftBonus, 0.12, dt)
     // Cancel the world's iso y-flatten on the label so the wordmark doesn't squash.
     if (labelRef.current) easing.damp(labelRef.current.scale, 'y', view === 'iso' ? 1 / ISO_FLATTEN : 1, 0.22, dt)
     easing.dampC(body.color, target, 0.18, dt)

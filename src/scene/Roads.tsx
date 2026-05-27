@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react'
 import { MeshStandardMaterial } from 'three'
 import { ROAD } from './lib/cityTheme'
-import { ROAD_SEGS } from './lib/cityModel'
+import { ROAD_SEGS, GATEWAY_SEGS } from './lib/cityModel'
+
+const ALL_SEGS = [...ROAD_SEGS, ...GATEWAY_SEGS]
 
 export function Roads() {
   const material = useMemo(
@@ -12,7 +14,7 @@ export function Roads() {
 
   return (
     <group>
-      {ROAD_SEGS.map((s, i) => {
+      {ALL_SEGS.map((s, i) => {
         const dx = s.bx - s.ax
         const dz = s.bz - s.az
         const len = Math.hypot(dx, dz)

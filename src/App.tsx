@@ -6,6 +6,7 @@ import { SearchExplore } from './components/SearchExplore'
 import { TagPills } from './components/TagPills'
 import { LayersControl } from './components/LayersControl'
 import { MapControlsHud } from './components/MapControlsHud'
+import { MusicPlayer } from './components/MusicPlayer'
 import { Legend } from './components/Legend'
 import type { FocusTarget } from './scene/CameraRig'
 import type { Place } from './scene/lib/places'
@@ -54,6 +55,7 @@ export default function App() {
         onToggleView={() => setView((v) => (v === '3d' ? 'iso' : '3d'))}
         onCmd={(type) => setCameraCmd({ type, nonce: performance.now() })}
       />
+      <MusicPlayer />
       {layer && <Legend layer={layer} />}
 
       {overlay?.type === 'project' && (
@@ -64,11 +66,7 @@ export default function App() {
         />
       )}
       {overlay?.type === 'landmark' && (
-        <PlaceOverlay
-          landmark={overlay.landmark}
-          tileRect={overlay.rect}
-          onClose={() => setOverlay(null)}
-        />
+        <PlaceOverlay landmark={overlay.landmark} onClose={() => setOverlay(null)} />
       )}
     </div>
   )

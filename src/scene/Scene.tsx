@@ -3,8 +3,10 @@ import { Canvas } from '@react-three/fiber'
 import { Loader } from '@react-three/drei'
 import { CameraRig, DEFAULT_CAMERA_TUPLE, type FocusTarget } from './CameraRig'
 import { CityWorld } from './CityWorld'
+import { DayNight } from './DayNight'
 import { Hero } from '../components/Hero'
-import { SKY } from './lib/cityTheme'
+import { WeatherClock } from '../components/WeatherClock'
+import { useHyderabad } from '../lib/useHyderabad'
 import type { Appearance, CameraCmd, LayerState, ViewMode, Project, Landmark } from '../types'
 
 interface SceneProps {
@@ -19,6 +21,7 @@ interface SceneProps {
 
 export function Scene({ appearance, layers, view, focus, cameraCmd, onSelect, onSelectLandmark }: SceneProps) {
   const [docked, setDocked] = useState(false)
+  const { time, weather } = useHyderabad()
   useEffect(() => {
     const t = setTimeout(() => setDocked(true), 2400)
     return () => clearTimeout(t)
@@ -32,24 +35,8 @@ export function Scene({ appearance, layers, view, focus, cameraCmd, onSelect, on
         dpr={[1, 2]}
         camera={{ position: DEFAULT_CAMERA_TUPLE, fov: 40, near: 0.5, far: 2000 }}
       >
-        <color attach="background" args={[SKY]} />
-        <fog attach="fog" args={[SKY, 200, 460]} />
-
-        <hemisphereLight args={[SKY, '#cdbfa6', 0.85]} />
-        <ambientLight intensity={0.35} />
-        <directionalLight
-          position={[70, 110, 50]}
-          intensity={1.15}
-          castShadow
-          shadow-mapSize={[2048, 2048]}
-          shadow-camera-near={10}
-          shadow-camera-far={360}
-          shadow-camera-left={-110}
-          shadow-camera-right={110}
-          shadow-camera-top={110}
-          shadow-camera-bottom={-110}
-          shadow-bias={-0.0004}
-        />
+        {/* Lights, sky, and fog ease with Hyderabad time-of-day + weather. */}
+        <DayNight weather={weather} view={view} />
 
         <Suspense fallback={null}>
           <CityWorld
@@ -68,6 +55,7 @@ export function Scene({ appearance, layers, view, focus, cameraCmd, onSelect, on
 
       {/* DOM HUD over the canvas */}
       <Hero docked={docked} />
+      <WeatherClock time={time} weather={weather} />
       <Hint />
     </div>
   )

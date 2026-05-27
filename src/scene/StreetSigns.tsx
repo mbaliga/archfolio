@@ -1,5 +1,6 @@
-import { Text } from '@react-three/drei'
+import { Billboard, Text } from '@react-three/drei'
 import interSemi from '@fontsource/inter/files/inter-latin-700-normal.woff'
+import { GATEWAYS } from './lib/cityModel'
 
 const INK = '#1b1b1b'
 const PAPER = '#fbf7ee'
@@ -74,6 +75,32 @@ export function AvenueLabels() {
           </group>
         )
       })}
+    </group>
+  )
+}
+
+// Billboarded markers at the far ends of the gateway avenues. Mounted outside
+// the iso-flatten group so they stay upright in both views. The −Z "Future"
+// marker sits deep enough to read as receding into the fog.
+export function GatewayLabels() {
+  return (
+    <group>
+      {GATEWAYS.map((g) => (
+        <Billboard key={g.id} position={[0, 14, g.z]}>
+          <Text
+            font={interSemi}
+            fontSize={11}
+            anchorX="center"
+            anchorY="middle"
+            letterSpacing={0.02}
+            color={INK}
+            outlineWidth={0.3}
+            outlineColor={PAPER}
+          >
+            {g.label}
+          </Text>
+        </Billboard>
+      ))}
     </group>
   )
 }

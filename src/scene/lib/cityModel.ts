@@ -55,6 +55,11 @@ export const LANDMARK_DEFS: LandmarkDef[] = LANDMARKS.map((l) => ({
   footprint: l.kind === 'stadium' ? 12 : 7,
 }))
 
+// Civic clock tower — a fixed monument near the plaza that keeps Hyderabad time.
+// Sits off the avenues/spokes so it claims a clear plot; registered as an anchor
+// so roads skirt it and scenery doesn't grow over it.
+export const CLOCK_TOWER = { position: [6, 0, 21] as [number, number, number], footprint: 5 }
+
 // Fixed plots the roads must avoid and scenery must not occupy.
 interface Anchor {
   x: number
@@ -64,6 +69,7 @@ interface Anchor {
 const ANCHORS: Anchor[] = [
   ...BUILDINGS.map((b) => ({ x: b.position[0], z: b.position[2], clearance: b.footprint * 0.5 + 3 })),
   ...LANDMARK_DEFS.map((l) => ({ x: l.position[0], z: l.position[2], clearance: l.footprint * 0.5 + 3 })),
+  { x: CLOCK_TOWER.position[0], z: CLOCK_TOWER.position[2], clearance: CLOCK_TOWER.footprint * 0.5 + 1 },
 ]
 
 function mulberry32(seed: number): () => number {
@@ -206,6 +212,21 @@ export const ROADS: RoadPath[] = NETWORK.roads
 export const PARCELS: Parcel[] = NETWORK.parcels
 export const ROAD_SEGS: RoadSeg[] = ROADS.flatMap(pathToSegs).filter(segClearsAnchors)
 
+// Gateway avenues — the main Z axis runs out of the city in both directions:
+// the future recedes ahead (−Z, into the fog), the past trails behind (+Z).
+// Kept out of ROAD_SEGS so they don't pull the camera bounds or spawn traffic.
+export const GATEWAY_LEN = 200
+export const GATEWAY_SEGS: RoadSeg[] = [
+  { ax: 0, az: -OUTER, bx: 0, bz: -GATEWAY_LEN, width: AVENUE_W },
+  { ax: 0, az: OUTER, bx: 0, bz: GATEWAY_LEN, width: AVENUE_W },
+]
+// World-space label anchors for the two gateway ends (near the reachable edge so
+// they read at the avenue's vanishing point before fading into the fog beyond).
+export const GATEWAYS = [
+  { id: 'future', label: 'The Future', z: -140 },
+  { id: 'past', label: 'The Past', z: 140 },
+] as const
+
 // --- Richer city: grey scenery buildings filling empty parcels ---------------
 export interface SceneryDef {
   id: string
@@ -324,11 +345,14 @@ function computeBounds() {
     zs.push(s.az, s.bz)
   }
   const pad = 14
+  // Extend the Z range so the camera can follow the gateway avenues a little way
+  // out of the city; their far ends still recede unreachably into the fog.
+  const gatewayReach = 60
   return {
     minX: Math.min(...xs) - pad,
     maxX: Math.max(...xs) + pad,
-    minZ: Math.min(...zs) - pad,
-    maxZ: Math.max(...zs) + pad,
+    minZ: Math.min(...zs) - pad - gatewayReach,
+    maxZ: Math.max(...zs) + pad + gatewayReach,
   }
 }
 
