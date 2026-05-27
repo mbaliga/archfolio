@@ -1,5 +1,5 @@
 import { BIOME, PAPER } from '../../lib/iso'
-import type { Quadrant } from '../../types'
+import type { MapLayer, Ownership, Project, Quadrant } from '../../types'
 import type { District } from './project3d'
 
 // Atmosphere — kept in the warm paper family so the 3D city is seamless with
@@ -41,6 +41,23 @@ export function districtTint(q: Quadrant): string {
 // towers so the labelled towers still pop. + a dim grey for tag-filtered dimming.
 export const SCENERY_BODY = ['#b9b3a7', '#c2bcb0', '#aea899', '#c7c0b2', '#b3ad9f']
 export const DIM_GREY = '#b4afa6'
+
+// Map layers: recolor project towers by a metric.
+export const EFFORT_RAMP = ['#cfe0c3', '#9cc6a0', '#6fae8a', '#4f8fb0', '#3f6aa0'] // 1..5
+export const OWNERSHIP_COLORS: Record<Ownership, string> = {
+  solo: '#c0654f',
+  lead: '#d89a4e',
+  collab: '#5a86c9',
+  support: '#9aa2ad',
+}
+
+export function layerColor(project: Project, layer: MapLayer): string {
+  if (layer === 'effort') {
+    const e = Math.min(5, Math.max(1, project.effort ?? 3))
+    return EFFORT_RAMP[e - 1]
+  }
+  return OWNERSHIP_COLORS[project.ownership ?? 'support']
+}
 
 // Decorative fabric — clearly "nature/minor", never grey like a project.
 export const FOLIAGE = ['#7faa5e', '#8cb86a', '#6f9d54']

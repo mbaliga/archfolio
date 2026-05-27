@@ -3,7 +3,7 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Color, Group, MeshStandardMaterial, type Object3D } from 'three'
 import { easing } from 'maath'
 import { Label } from './Label'
-import { bodyColor, roofColor, DIM_GREY } from './lib/cityTheme'
+import { bodyColor, roofColor, DIM_GREY, layerColor } from './lib/cityTheme'
 import type { BuildingDef } from './lib/cityModel'
 import type { Appearance, Project, RoofStyle } from '../types'
 
@@ -63,15 +63,30 @@ export function Building({ def, hovered, appearance, showLabel, onHover, onSelec
   const roofH = w * 0.5
   const signY = roofStyle === 'pitched' ? height + roofH + 2.0 : height + 3.0
 
-  const matches =
-    appearance.mode !== 'tag' ||
-    (appearance.activeTag !== null && project.tags.includes(appearance.activeTag))
+  const layerCol = useMemo(
+    () =>
+      appearance.mode === 'layer' && appearance.layer
+        ? new Color(layerColor(project, appearance.layer))
+        : null,
+    [appearance.mode, appearance.layer, project],
+  )
+  const tagMatches = appearance.activeTag !== null && project.tags.includes(appearance.activeTag)
 
   useFrame((_, dt) => {
-    const lift = (hovered ? 1.8 : 0) + (matches && appearance.mode === 'tag' ? 0.8 : 0)
-    if (liftRef.current) easing.damp(liftRef.current.position, 'y', lift, 0.12, dt)
-    easing.dampC(body.color, matches ? baseColor : DIM, 0.18, dt)
-    const em = !matches ? 0 : hovered ? baseEmissive + 0.32 : baseEmissive
+    let target = baseColor
+    let em = hovered ? baseEmissive + 0.32 : baseEmissive
+    let liftBonus = 0
+    if (appearance.mode === 'layer' && layerCol) {
+      target = layerCol
+    } else if (appearance.mode === 'tag') {
+      if (tagMatches) liftBonus = 0.8
+      else {
+        target = DIM
+        em = 0
+      }
+    }
+    if (liftRef.current) easing.damp(liftRef.current.position, 'y', (hovered ? 1.8 : 0) + liftBonus, 0.12, dt)
+    easing.dampC(body.color, target, 0.18, dt)
     easing.damp(body, 'emissiveIntensity', em, 0.15, dt)
   })
 

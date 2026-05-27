@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import type { LayerState } from '../types'
+import type { LayerState, MapLayer } from '../types'
 
 interface LayersControlProps {
   layers: LayerState
   onChange: (next: LayerState) => void
+  layer: MapLayer | null
+  onLayerChange: (layer: MapLayer | null) => void
 }
 
 const ROWS: { key: keyof LayerState; label: string }[] = [
@@ -12,14 +14,21 @@ const ROWS: { key: keyof LayerState; label: string }[] = [
   { key: 'showLandmarks', label: 'Landmarks' },
 ]
 
-// Maps-style "Layers" button (bottom-left) with a small popover of toggles.
-export function LayersControl({ layers, onChange }: LayersControlProps) {
+const COLOR_BY: { value: MapLayer | null; label: string }[] = [
+  { value: null, label: 'None' },
+  { value: 'effort', label: 'Effort' },
+  { value: 'ownership', label: 'Ownership' },
+]
+
+// Maps-style "Layers" button (bottom-left) with a small popover of toggles and
+// a "Color by" metric picker.
+export function LayersControl({ layers, onChange, layer, onLayerChange }: LayersControlProps) {
   const [open, setOpen] = useState(false)
 
   return (
     <div className="pointer-events-auto absolute bottom-4 left-4 z-20">
       {open && (
-        <div className="absolute bottom-0 left-[calc(100%+10px)] w-[188px] rounded-[14px] border border-black/10 bg-white/95 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.16)] backdrop-blur-md">
+        <div className="absolute bottom-0 left-[calc(100%+10px)] w-[200px] rounded-[14px] border border-black/10 bg-white/95 p-3 shadow-[0_10px_30px_rgba(0,0,0,0.16)] backdrop-blur-md">
           <div className="mb-2 font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-ink-soft/70">
             Layers
           </div>
@@ -33,8 +42,26 @@ export function LayersControl({ layers, onChange }: LayersControlProps) {
               <Switch on={layers[row.key]} />
             </button>
           ))}
-          <div className="mt-2 border-t border-black/10 pt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-soft/40">
-            Color by · soon
+          <div className="mt-2 border-t border-black/10 pt-[10px]">
+            <div className="mb-[7px] font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-ink-soft/70">
+              Color by
+            </div>
+            <div className="flex gap-[5px]">
+              {COLOR_BY.map((c) => (
+                <button
+                  key={c.label}
+                  onClick={() => onLayerChange(c.value)}
+                  className={[
+                    'flex-1 rounded-full border px-[8px] py-[5px] text-[11px] font-medium transition-colors',
+                    layer === c.value
+                      ? 'border-ink bg-ink text-paper'
+                      : 'border-black/15 bg-transparent text-ink hover:bg-black/[0.05]',
+                  ].join(' ')}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

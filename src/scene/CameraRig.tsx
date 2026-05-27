@@ -4,10 +4,16 @@ import { MapControls } from '@react-three/drei'
 import { Vector3 } from 'three'
 import { easing } from 'maath'
 import { CITY_BOUNDS } from './lib/cityModel'
-import type { CameraCmd } from '../types'
+import type { CameraCmd, ViewMode } from '../types'
 
 export const DEFAULT_CAMERA_TUPLE: [number, number, number] = [0, 92, 118]
 export const DEFAULT_CAMERA_POS = new Vector3(...DEFAULT_CAMERA_TUPLE)
+
+// Camera offset (from the pan target) per view mode. iso = locked 3/4 angle.
+const VIEW_OFFSET: Record<ViewMode, Vector3> = {
+  '3d': new Vector3(0, 92, 118),
+  iso: new Vector3(82, 104, 82),
+}
 const ORIGIN: [number, number, number] = [0, 0, 0]
 const { minX, maxX, minZ, maxZ } = CITY_BOUNDS
 
@@ -22,7 +28,15 @@ export interface FocusTarget {
   nonce: number
 }
 
-export function CameraRig({ focus, cmd }: { focus: FocusTarget | null; cmd: CameraCmd | null }) {
+export function CameraRig({
+  focus,
+  cmd,
+  view,
+}: {
+  focus: FocusTarget | null
+  cmd: CameraCmd | null
+  view: ViewMode
+}) {
   const ref = useRef<ElementRef<typeof MapControls>>(null)
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
@@ -34,6 +48,9 @@ export function CameraRig({ focus, cmd }: { focus: FocusTarget | null; cmd: Came
   const zooming = useRef(false)
   const zoomTarget = useRef(0)
   const lastCmd = useRef(0)
+  const viewing = useRef(false)
+  const viewPos = useRef(new Vector3())
+  const lastView = useRef(view)
 
   useEffect(() => {
     const el = gl.domElement
@@ -75,6 +92,13 @@ export function CameraRig({ focus, cmd }: { focus: FocusTarget | null; cmd: Came
       }
     }
 
+    // 2D/3D view change — ease to the matching vantage.
+    if (view !== lastView.current) {
+      lastView.current = view
+      viewing.current = true
+      viewPos.current.copy(c.target).add(VIEW_OFFSET[view])
+    }
+
     if (flying.current) {
       easing.damp3(camera.position, flyPos.current, 0.3, dt)
       easing.damp3(c.target, flyTarget.current, 0.3, dt)
@@ -97,6 +121,13 @@ export function CameraRig({ focus, cmd }: { focus: FocusTarget | null; cmd: Came
         zooming.current = false
         c.enabled = true
       }
+      return
+    }
+
+    if (viewing.current) {
+      easing.damp3(camera.position, viewPos.current, 0.3, dt)
+      c.update()
+      if (camera.position.distanceTo(viewPos.current) < 0.8) viewing.current = false
       return
     }
 
@@ -131,6 +162,7 @@ export function CameraRig({ focus, cmd }: { focus: FocusTarget | null; cmd: Came
       enableDamping
       dampingFactor={0.08}
       screenSpacePanning={false}
+      enableRotate={view !== 'iso'}
       minDistance={45}
       maxDistance={230}
       minPolarAngle={0.32}

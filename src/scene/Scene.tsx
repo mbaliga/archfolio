@@ -6,18 +6,19 @@ import { CityWorld } from './CityWorld'
 import { Hero } from '../components/Hero'
 import { AboutPanel } from '../components/AboutPanel'
 import { SKY } from './lib/cityTheme'
-import type { Appearance, CameraCmd, LayerState, Project, Landmark } from '../types'
+import type { Appearance, CameraCmd, LayerState, ViewMode, Project, Landmark } from '../types'
 
 interface SceneProps {
   appearance: Appearance
   layers: LayerState
+  view: ViewMode
   focus: FocusTarget | null
   cameraCmd: CameraCmd | null
   onSelect: (project: Project, rect: DOMRect) => void
   onSelectLandmark: (landmark: Landmark, rect: DOMRect) => void
 }
 
-export function Scene({ appearance, layers, focus, cameraCmd, onSelect, onSelectLandmark }: SceneProps) {
+export function Scene({ appearance, layers, view, focus, cameraCmd, onSelect, onSelectLandmark }: SceneProps) {
   const [docked, setDocked] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setDocked(true), 2400)
@@ -55,12 +56,13 @@ export function Scene({ appearance, layers, focus, cameraCmd, onSelect, onSelect
           <CityWorld
             appearance={appearance}
             layers={layers}
+            view={view}
             onSelect={onSelect}
             onSelectLandmark={onSelectLandmark}
           />
         </Suspense>
 
-        <CameraRig focus={focus} cmd={cameraCmd} />
+        <CameraRig focus={focus} cmd={cameraCmd} view={view} />
       </Canvas>
 
       <Loader />

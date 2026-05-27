@@ -6,6 +6,8 @@ export const PROJECTS: Project[] = [
   // Q1 — Enterprise + Complex
   {
     id: 'impressio',
+    effort: 4,
+    ownership: 'lead',
     gx: 2,
     gy: 4,
     scale: 1.3,
@@ -17,6 +19,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'izak',
+    effort: 5,
+    ownership: 'lead',
     gx: 6,
     gy: 4,
     scale: 1.5,
@@ -28,6 +32,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'paas',
+    effort: 3,
+    ownership: 'collab',
     gx: 4,
     gy: 2,
     scale: 1.2,
@@ -39,6 +45,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'snaplogic',
+    effort: 3,
+    ownership: 'lead',
     gx: 2,
     gy: 2,
     scale: 1.0,
@@ -51,6 +59,8 @@ export const PROJECTS: Project[] = [
   // Q2 — Enterprise + Simple
   {
     id: 'lms',
+    effort: 2,
+    ownership: 'lead',
     gx: -2,
     gy: 2,
     scale: 0.9,
@@ -62,6 +72,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'holacracy',
+    effort: 3,
+    ownership: 'collab',
     gx: -4,
     gy: 4,
     scale: 1.15,
@@ -73,6 +85,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'kya',
+    effort: 3,
+    ownership: 'lead',
     gx: -2,
     gy: 4,
     scale: 1.05,
@@ -85,6 +99,8 @@ export const PROJECTS: Project[] = [
   // Q4 — Consumer + Complex
   {
     id: 'amplyfund',
+    effort: 3,
+    ownership: 'collab',
     gx: 2,
     gy: -2,
     scale: 1.1,
@@ -96,6 +112,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'voteiq',
+    effort: 4,
+    ownership: 'collab',
     gx: 4,
     gy: -4,
     scale: 1.35,
@@ -108,6 +126,8 @@ export const PROJECTS: Project[] = [
   // Q3 — Consumer + Simple
   {
     id: 'mo',
+    effort: 2,
+    ownership: 'support',
     gx: -2,
     gy: -2,
     scale: 1.0,
@@ -119,6 +139,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'clink',
+    effort: 2,
+    ownership: 'collab',
     gx: -4,
     gy: -2,
     scale: 0.85,
@@ -130,6 +152,8 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'revee',
+    effort: 3,
+    ownership: 'solo',
     gx: -2,
     gy: -4,
     scale: 0.95,
@@ -142,6 +166,8 @@ export const PROJECTS: Project[] = [
   // Easter egg — Architecture
   {
     id: 'arch',
+    effort: 4,
+    ownership: 'solo',
     gx: 6,
     gy: 6,
     scale: 1.1,

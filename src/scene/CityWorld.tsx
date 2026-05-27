@@ -1,6 +1,7 @@
-import { useCallback, useState } from 'react'
-import { useThree } from '@react-three/fiber'
-import { Box3, Camera, Vector3, type Object3D } from 'three'
+import { useCallback, useRef, useState } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import { Box3, Camera, Group, Vector3, type Object3D } from 'three'
+import { easing } from 'maath'
 import { Ground } from './Ground'
 import { Roads } from './Roads'
 import { Props } from './Props'
@@ -9,11 +10,12 @@ import { Building } from './Building'
 import { Landmark } from './Landmark'
 import { StreetSigns } from './StreetSigns'
 import { BUILDINGS, LANDMARK_DEFS } from './lib/cityModel'
-import type { Appearance, LayerState, Project, Landmark as LandmarkData } from '../types'
+import type { Appearance, LayerState, ViewMode, Project, Landmark as LandmarkData } from '../types'
 
 interface CityWorldProps {
   appearance: Appearance
   layers: LayerState
+  view: ViewMode
   onSelect: (project: Project, rect: DOMRect) => void
   onSelectLandmark: (landmark: LandmarkData, rect: DOMRect) => void
 }
@@ -54,10 +56,16 @@ function projectRect(object: Object3D, camera: Camera, canvas: HTMLCanvasElement
   return new DOMRect(minX, minY, Math.max(8, maxX - minX), Math.max(8, maxY - minY))
 }
 
-export function CityWorld({ appearance, layers, onSelect, onSelectLandmark }: CityWorldProps) {
+export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark }: CityWorldProps) {
   const [hovered, setHovered] = useState<string | null>(null)
+  const worldRef = useRef<Group>(null)
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
+
+  // 2D/iso view flattens the city vertically.
+  useFrame((_, dt) => {
+    if (worldRef.current) easing.damp(worldRef.current.scale, 'y', view === 'iso' ? 0.3 : 1, 0.22, dt)
+  })
 
   const handleSelect = useCallback(
     (project: Project, object: Object3D) => {
@@ -73,20 +81,23 @@ export function CityWorld({ appearance, layers, onSelect, onSelectLandmark }: Ci
     [camera, gl, onSelectLandmark],
   )
 
+  // Floating wordmarks/signs would squish when flattened, so hide them in 2D.
+  const showLabel = layers.showLabels && view === '3d'
+
   return (
-    <group>
+    <group ref={worldRef}>
       <Ground />
       <Roads />
       <Props />
       {layers.showScenery && <CityFill />}
-      <StreetSigns />
+      {view === '3d' && <StreetSigns />}
       {BUILDINGS.map((def) => (
         <Building
           key={def.project.id}
           def={def}
           hovered={hovered === def.project.id}
           appearance={appearance}
-          showLabel={layers.showLabels}
+          showLabel={showLabel}
           onHover={setHovered}
           onSelect={handleSelect}
         />
@@ -97,7 +108,7 @@ export function CityWorld({ appearance, layers, onSelect, onSelectLandmark }: Ci
             key={def.landmark.id}
             def={def}
             hovered={hovered === def.landmark.id}
-            showLabel={layers.showLabels}
+            showLabel={showLabel}
             onHover={setHovered}
             onSelect={handleSelectLandmark}
           />

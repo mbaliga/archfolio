@@ -20,6 +20,8 @@ export type GlyphName =
 
 export type RoofStyle = 'flat' | 'setback' | 'pitched'
 
+export type Ownership = 'solo' | 'lead' | 'collab' | 'support'
+
 export interface Project {
   id: string
   gx: number
@@ -36,6 +38,9 @@ export interface Project {
   roofStyle?: RoofStyle
   /** Path to a logo image; when set it replaces the wordmark on the building. */
   logo?: string
+  /** Map-layer metrics. effort 1 (light) .. 5 (heavy); ownership of the work. */
+  effort?: number
+  ownership?: Ownership
 }
 
 export interface FillerTile {
@@ -67,11 +72,16 @@ export interface Landmark {
 }
 
 // --- Google-Maps-style HUD state --------------------------------------------
-/** How project buildings are coloured. 'tag' highlights matches, dims the rest. */
+/** How project buildings are coloured. 'tag' highlights matches, dims the rest;
+ *  'layer' recolours every building by a metric. */
+export type MapLayer = 'effort' | 'ownership'
 export interface Appearance {
-  mode: 'default' | 'tag'
+  mode: 'default' | 'tag' | 'layer'
   activeTag: string | null
+  layer: MapLayer | null
 }
+
+export type ViewMode = '3d' | 'iso'
 
 export interface LayerState {
   showLabels: boolean
