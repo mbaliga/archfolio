@@ -4,7 +4,8 @@ import type { CaseStudy, LockedPayload, Project } from '../types'
 import { TakeoverShell } from './TakeoverShell'
 import { CaseStudy as RichCaseStudyView } from './CaseStudy/CaseStudy'
 import { LockGate } from './LockGate'
-import { EMAIL } from '../lib/contact'
+import { MINDMAPS } from '../data/mindmaps'
+import { ProjectMindmapView } from './ProjectMindmap'
 
 interface ProjectOverlayProps {
   project: Project
@@ -145,7 +146,7 @@ export function ProjectOverlay({ project, tileRect, onClose }: ProjectOverlayPro
         <CaseStudyBody cs={project.caseStudy} accent={accent} tags={project.tags} imageGroups={project.imageGroups} />
       ) : (
         <>
-          <SimpleBody project={project} />
+          <SimpleBody project={project} accent={accent} />
           <Carousels groups={project.imageGroups} accent={accent} />
         </>
       )}
@@ -771,8 +772,8 @@ function Carousels({ groups, accent }: { groups?: Project['imageGroups']; accent
 
 // A project without a written case study. Rather than a paragraph that just
 // stops, it shows what a recruiter looks for first (my role, when, scope) and
-// ends with an invitation to ask, so a thin project reads as "ask me" rather
-// than "abandoned".
+// then the interactive project map: brief, users, role, what was designed, the
+// hard part, and the outcome.
 const ROLE_LABEL: Record<string, string> = {
   solo: 'Solo designer',
   lead: 'Lead designer',
@@ -780,33 +781,19 @@ const ROLE_LABEL: Record<string, string> = {
   support: 'Supporting designer',
 }
 
-function SimpleBody({ project }: { project: Project }) {
-  const year = project.sub.match(/\b(19|20)\d{2}\b/)?.[0]
-  const role = project.ownership ? ROLE_LABEL[project.ownership] : undefined
-  const ask = `mailto:${EMAIL}?subject=${encodeURIComponent(`About ${project.label}`)}`
+function SimpleBody({ project, accent }: { project: Project; accent: string }) {
+  const map = MINDMAPS[project.id]
+  const year = map?.when ?? project.sub.match(/\b(19|20)\d{2}\b/)?.[0]
+  const role = map?.roleLabel ?? (project.ownership ? ROLE_LABEL[project.ownership] : undefined)
   const facts = [
     ...(role ? [{ k: 'My role', v: role }] : []),
-    ...(year ? [{ k: 'Year', v: year }] : []),
+    ...(year ? [{ k: 'When', v: year }] : []),
   ]
   return (
     <>
       <div className="mb-12 mt-12 h-px bg-black/[0.08]" />
       <div className="grid grid-cols-[1fr_1fr] items-start gap-16 max-[800px]:grid-cols-1">
-        <div>
-          <div className="text-[17px] leading-[1.75] text-[#2a2622]">{project.desc}</div>
-          <div className="mt-8 rounded-[16px] border border-black/[0.08] bg-black/[0.03] p-5">
-            <p className="text-[14px] leading-[1.6] text-[#2a2622]">
-              The full write-up isn’t on the site yet. I’m happy to walk you through the problem, my
-              decisions and the outcome.
-            </p>
-            <a
-              href={ask}
-              className="mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-[9px] text-[13px] font-semibold text-white transition-transform hover:-translate-y-0.5"
-            >
-              Ask me about {project.label}
-            </a>
-          </div>
-        </div>
+        <div className="text-[17px] leading-[1.75] text-[#2a2622]">{project.desc}</div>
         <div className="flex flex-col gap-5">
           {facts.map((f) => (
             <div key={f.k}>
@@ -833,6 +820,14 @@ function SimpleBody({ project }: { project: Project }) {
           </div>
         </div>
       </div>
+      {map && (
+        <section className="mt-14" aria-labelledby="mm-heading">
+          <h2 id="mm-heading" className="mb-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft">
+            Project map
+          </h2>
+          <ProjectMindmapView title={project.label} map={map} accent={accent} />
+        </section>
+      )}
     </>
   )
 }
