@@ -19,7 +19,7 @@ export const SNAPLOGIC_CASE_STUDY: RichCaseStudy = {
     ownershipType: 'solo',
     year: '2025',
     timeline: 'Jan 2025 – Ongoing',
-    status: 'Live in production — dual navigation, AI search & DocGPT shipped',
+    status: 'Live in production: dual navigation, AI search & DocGPT shipped',
     liveUrl: '',
     featured: true,
   },

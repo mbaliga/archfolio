@@ -16,7 +16,7 @@ export const PROJECTS: Project[] = [
     label: 'Impressio',
     sub: 'AEON ROBOT · 2024',
     glyph: 'robot',
-    desc: 'End-to-end UX/UI flows for casting MIAs on the Aeon humanoid robot — desktop and tablet. Included the World AI Summit live demo and tablet casting interface.',
+    desc: 'End-to-end UX/UI flows for casting MIAs on the Aeon humanoid robot, on desktop and tablet. Included the World AI Summit live demo and tablet casting interface.',
     tags: ['Enterprise', 'Robotics', 'Tablet', 'B2B'],
   },
   {
@@ -54,13 +54,13 @@ export const PROJECTS: Project[] = [
     locked: true,
     teaser: {
       summary:
-        'A DITA CMS that makes structured authoring feel like writing a document — with AI assistance, content governance, and monetization built into one stack no competitor matches.',
+        'A DITA CMS that makes structured authoring feel like writing a document, with AI assistance, content governance, and monetization built into one stack no competitor matches.',
       metric: { value: 'V2', label: 'CEO-approved, in engineering build' },
       role: 'Product Designer · lead on the authoring canvas · 2025',
       highlights: [
-        'Designed the DITA Builder canvas — a three-panel workspace (outline tree, WYSIWYG editor, content blocks) that hides XML complexity without ever breaking structural validity.',
+        'Designed the DITA Builder canvas: a three-panel workspace (outline tree, WYSIWYG editor, content blocks) that hides XML complexity without ever breaking structural validity.',
         'Shaped Prompt-as-a-Service: prompts treated as first-class, governed, monetizable content rather than throwaway text.',
-        'Folded authoring, content governance, and monetization into one stack — a combination no competitor currently ships.',
+        'Folded authoring, content governance, and monetization into one stack, a combination no competitor currently ships.',
         'V2 approved by the CEO and handed to engineering for build.',
       ],
       covers: [
@@ -78,11 +78,11 @@ export const PROJECTS: Project[] = [
         images: [
           {
             src: '/IMAGES/CMS-2025-DITA.png',
-            caption: 'DITA Builder canvas — a three-panel workspace with outline tree, WYSIWYG editor, and drag-and-drop content blocks. Author / XML / Relationship view toggling abstracts the XML without losing structural validity.',
+            caption: 'DITA Builder canvas: a three-panel workspace with outline tree, WYSIWYG editor, and drag-and-drop content blocks. Author / XML / Relationship view toggling abstracts the XML without losing structural validity.',
           },
           {
             src: '/IMAGES/CMS-2025-DITA2.png',
-            caption: 'Variety of Topics to choose from for enriched metadata — Concept, Task, Reference, Map, and Basic topic types paired with flexible layout options (Full Width, 2×1, 3×1, 2×2) for richly structured DITA authoring.',
+            caption: 'Variety of Topics to choose from for enriched metadata: Concept, Task, Reference, Map, and Basic topic types paired with flexible layout options (Full Width, 2×1, 3×1, 2×2) for richly structured DITA authoring.',
           },
         ],
       },
@@ -100,17 +100,17 @@ export const PROJECTS: Project[] = [
     sub: 'DOCUMENTATION REVAMP',
     glyph: 'connector',
     featured: true,
-    desc: "Rebuilt SnapLogic's 700-page enterprise documentation from a Confluence tree into a dual-navigation portal — browse by product or by task intent — cutting clicks-to-target by 40%.",
+    desc: "Rebuilt SnapLogic's 700-page enterprise documentation from a Confluence tree into a dual-navigation portal (browse by product or by task intent), cutting clicks-to-target by 40%.",
     tags: ['Enterprise', 'UX Research', 'B2B', 'Information Architecture', 'DITA', 'Responsive'],
     locked: true,
     teaser: {
       summary:
-        "SnapLogic's enterprise docs lived on Confluence — never built for external product documentation. I rebuilt the experience around a dual-navigation system that lets users browse by product taxonomy or by task intent, reducing clicks-to-target by a validated 40%.",
+        "SnapLogic's enterprise docs lived on Confluence, never built for external product documentation. I rebuilt the experience around a dual-navigation system that lets users browse by product taxonomy or by task intent, reducing clicks-to-target by a validated 40%.",
       metric: { value: '40%', label: 'fewer clicks to target' },
       role: 'Solo Product Designer · UX Research → IA → UI · 2026',
       highlights: [
         'Rebuilt 700+ pages of enterprise documentation from a sprawling Confluence tree into a purpose-built product portal.',
-        'Designed a dual-navigation system — browse by product taxonomy or by task intent — serving one source of content with zero duplication.',
+        'Designed a dual-navigation system (browse by product taxonomy or by task intent) serving one source of content with zero duplication.',
         'Validated a 40% cut in clicks-to-target through task-based user research, not guesswork.',
         'Delivered a responsive, DITA-backed information architecture built to scale with the product.',
       ],
@@ -129,7 +129,7 @@ export const PROJECTS: Project[] = [
         images: [
           {
             src: '/IMAGES/Snaplogic-2026-internal page.png',
-            caption: 'Internal documentation page — the dual-navigation system in context. Product taxonomy on the left, task-based browse on the right; both modes serve the same content without duplication.',
+            caption: 'Internal documentation page: the dual-navigation system in context. Product taxonomy on the left, task-based browse on the right; both modes serve the same content without duplication.',
           },
         ],
       },
@@ -162,7 +162,7 @@ export const PROJECTS: Project[] = [
     label: 'Holacracy',
     sub: 'INTERNAL TOOLING',
     glyph: 'circles',
-    desc: 'Internal tooling for self-organising teams — circles, roles, tensions, and governance workflows. Where org design meets product design.',
+    desc: 'Internal tooling for self-organising teams: circles, roles, tensions, and governance workflows. Where org design meets product design.',
     tags: ['Enterprise', 'Internal', 'Governance'],
   },
   {
@@ -216,7 +216,7 @@ export const PROJECTS: Project[] = [
     label: 'Circlehealth',
     sub: 'MOBILE · HEALTHCARE',
     glyph: 'heart',
-    desc: 'Information architecture and UX/UI prototyping for a consumer healthcare app. Internal pilot — attended CEO and Head of Design reviews, supported QA handoff.',
+    desc: 'Information architecture and UX/UI prototyping for a consumer healthcare app. Internal pilot: attended CEO and Head of Design reviews, supported QA handoff.',
     tags: ['Consumer', 'Mobile', 'Healthcare'],
   },
   {
@@ -249,11 +249,11 @@ export const PROJECTS: Project[] = [
     locked: true,
     teaser: {
       summary:
-        'Two apps that reclaim the TV home screen for local communities and replace interruptive advertising with contextual companion experiences — part of a 12-app MIAs suite shown at CES 2024 and handed off for partnership.',
+        'Two apps that reclaim the TV home screen for local communities and replace interruptive advertising with contextual companion experiences, part of a 12-app MIAs suite shown at CES 2024 and handed off for partnership.',
       metric: { value: 'CES 2024', label: 'showcased · Las Vegas' },
       role: 'Lead Designer · end-to-end · 2 of a 12-app suite · 2024',
       highlights: [
-        'Designed two smart-TV apps end to end — Mo, a community-first home screen, and Revee, adaptive streaming.',
+        'Designed two smart-TV apps end to end: Mo, a community-first home screen, and Revee, adaptive streaming.',
         'Replaced interruptive advertising with contextual, non-interruptive companion experiences that respect lean-back viewing.',
         'Built for the ten-foot TV experience across a coherent 12-app MIAs system.',
         'Showcased at CES 2024 in Las Vegas and handed off for partnership.',
@@ -273,11 +273,11 @@ export const PROJECTS: Project[] = [
         images: [
           {
             src: '/IMAGES/Mo-2024-Home.png',
-            caption: 'Home screen — a personalised daily hub: community greeting, real-time local updates, and cross-app "pick up where you left off" continuity.',
+            caption: 'Home screen: a personalised daily hub: community greeting, real-time local updates, and cross-app "pick up where you left off" continuity.',
           },
           {
             src: '/IMAGES/Mo-2024-Map.png',
-            caption: 'Map view — location-aware discovery of nearby community events, venues, and services, navigable with the TV remote.',
+            caption: 'Map view: location-aware discovery of nearby community events, venues, and services, navigable with the TV remote.',
           },
         ],
       },
@@ -287,15 +287,15 @@ export const PROJECTS: Project[] = [
         images: [
           {
             src: '/IMAGES/Revee-2024-epg.png',
-            caption: 'EPG — the Electronic Programme Guide surfaces live, catch-up, and on-demand content in a single lean-back scroll. Focus states scale the active tile so it reads clearly from 10 feet.',
+            caption: 'EPG: the Electronic Programme Guide surfaces live, catch-up, and on-demand content in a single lean-back scroll. Focus states scale the active tile so it reads clearly from 10 feet.',
           },
           {
             src: '/IMAGES/Revee-2024-Banner.png',
-            caption: 'Companion banner ad — thematically matched creative sits beside the video stream, not over it. Viewers can engage or dismiss without the playback ever pausing.',
+            caption: 'Companion banner ad: thematically matched creative sits beside the video stream, not over it. Viewers can engage or dismiss without the playback ever pausing.',
           },
           {
             src: '/IMAGES/Revee-2024-Interactive-Ad.png',
-            caption: 'Interactive ad unit — an opt-in overlay that lets brands go deeper (product details, save-to-wishlist, QR to phone) while content continues in the background.',
+            caption: 'Interactive ad unit: an opt-in overlay that lets brands go deeper (product details, save-to-wishlist, QR to phone) while content continues in the background.',
           },
         ],
       },
@@ -314,7 +314,7 @@ export const PROJECTS: Project[] = [
     glyph: 'cottage',
     height: 8,
     roofStyle: 'pitched',
-    desc: 'Residential architectural practice — the quiet cottage at the far edge of the map. Prachi brings the same spatial thinking she applies to physical buildings to every digital surface she designs.',
+    desc: 'A residential architectural practice, the quiet cottage at the far edge of the map. I bring the same spatial thinking I apply to physical buildings to every digital surface I design.',
     tags: ['Architecture', 'Residential', 'Spatial'],
   },
 ]

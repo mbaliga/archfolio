@@ -4,6 +4,7 @@ import type { CaseStudy, LockedPayload, Project } from '../types'
 import { TakeoverShell } from './TakeoverShell'
 import { CaseStudy as RichCaseStudyView } from './CaseStudy/CaseStudy'
 import { LockGate } from './LockGate'
+import { EMAIL } from '../lib/contact'
 
 interface ProjectOverlayProps {
   project: Project
@@ -144,7 +145,7 @@ export function ProjectOverlay({ project, tileRect, onClose }: ProjectOverlayPro
         <CaseStudyBody cs={project.caseStudy} accent={accent} tags={project.tags} imageGroups={project.imageGroups} />
       ) : (
         <>
-          <SimpleBody desc={project.desc} tags={project.tags} qLabel={qLabel} />
+          <SimpleBody project={project} />
           <Carousels groups={project.imageGroups} accent={accent} />
         </>
       )}
@@ -768,19 +769,59 @@ function Carousels({ groups, accent }: { groups?: Project['imageGroups']; accent
   )
 }
 
-function SimpleBody({ desc, tags, qLabel }: { desc: string; tags: string[]; qLabel: string }) {
+// A project without a written case study. Rather than a paragraph that just
+// stops, it shows what a recruiter looks for first (my role, when, scope) and
+// ends with an invitation to ask, so a thin project reads as "ask me" rather
+// than "abandoned".
+const ROLE_LABEL: Record<string, string> = {
+  solo: 'Solo designer',
+  lead: 'Lead designer',
+  collab: 'Co-designer, shared ownership',
+  support: 'Supporting designer',
+}
+
+function SimpleBody({ project }: { project: Project }) {
+  const year = project.sub.match(/\b(19|20)\d{2}\b/)?.[0]
+  const role = project.ownership ? ROLE_LABEL[project.ownership] : undefined
+  const ask = `mailto:${EMAIL}?subject=${encodeURIComponent(`About ${project.label}`)}`
+  const facts = [
+    ...(role ? [{ k: 'My role', v: role }] : []),
+    ...(year ? [{ k: 'Year', v: year }] : []),
+  ]
   return (
     <>
       <div className="mb-12 mt-12 h-px bg-black/[0.08]" />
       <div className="grid grid-cols-[1fr_1fr] items-start gap-16 max-[800px]:grid-cols-1">
-        <div className="text-[17px] leading-[1.75] text-[#2a2622]">{desc}</div>
+        <div>
+          <div className="text-[17px] leading-[1.75] text-[#2a2622]">{project.desc}</div>
+          <div className="mt-8 rounded-[16px] border border-black/[0.08] bg-black/[0.03] p-5">
+            <p className="text-[14px] leading-[1.6] text-[#2a2622]">
+              The full write-up isn’t on the site yet. I’m happy to walk you through the problem, my
+              decisions and the outcome.
+            </p>
+            <a
+              href={ask}
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-ink px-4 py-[9px] text-[13px] font-semibold text-white transition-transform hover:-translate-y-0.5"
+            >
+              Ask me about {project.label}
+            </a>
+          </div>
+        </div>
         <div className="flex flex-col gap-5">
+          {facts.map((f) => (
+            <div key={f.k}>
+              <label className="mb-[6px] block font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-ink-soft">
+                {f.k}
+              </label>
+              <div className="text-[15px] font-semibold leading-[1.5] text-[#2a2622]">{f.v}</div>
+            </div>
+          ))}
           <div>
             <label className="mb-[6px] block font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-ink-soft">
               Disciplines
             </label>
             <div className="flex flex-wrap gap-[6px]">
-              {tags.map((t) => (
+              {project.tags.map((t) => (
                 <span
                   key={t}
                   className="rounded-full bg-black/[0.06] px-[10px] py-[5px] font-mono text-[10px] uppercase tracking-[0.08em] text-ink"
@@ -789,12 +830,6 @@ function SimpleBody({ desc, tags, qLabel }: { desc: string; tags: string[]; qLab
                 </span>
               ))}
             </div>
-          </div>
-          <div>
-            <label className="mb-[6px] block font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-ink-soft">
-              Quadrant
-            </label>
-            <div className="text-[14px] leading-[1.5] text-[#2a2622]">{qLabel}</div>
           </div>
         </div>
       </div>
