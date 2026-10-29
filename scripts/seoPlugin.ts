@@ -28,6 +28,7 @@ import { pbkdf2Sync, randomBytes, createCipheriv } from 'node:crypto'
 import type { Plugin } from 'vite'
 import { PROJECTS } from '../src/data/projects'
 import { LOCKED_CASE_STUDIES } from '../src/data/lockedCaseStudies'
+import { MINDMAPS } from '../src/data/mindmaps'
 import type { Project } from '../src/types'
 
 // Canonical origin. Vercel serves www as the primary domain (the apex 30x-
@@ -151,6 +152,14 @@ function articleFor(p: Project): string {
     ? `<ul>${cs.impact.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`
     : ''
   const skills = `<ul>${p.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`
+  // Projects without a written case study carry an interactive project map;
+  // give crawlers and AI assistants the same content as plain text.
+  const mm = MINDMAPS[p.id]
+  const map = mm
+    ? mm.branches
+        .map((b) => `<h4>${esc(b.label)}</h4><p>${esc(b.summary)}</p><ul>${b.leaves.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`)
+        .join('')
+    : ''
 
   return `
 <article aria-label="${esc(p.label)} case study (text version)">
@@ -163,6 +172,7 @@ function articleFor(p: Project): string {
   ${section('Process', process)}
   ${cs?.approach ? `<section aria-labelledby="${p.id}-solution"><h3 id="${p.id}-solution">Solution</h3>${approach}</section>` : ''}
   ${section('Impact', impact)}
+  ${map ? `<section aria-labelledby="${p.id}-map"><h3 id="${p.id}-map">Project map</h3>${map}</section>` : ''}
   ${section('Skills', skills)}
   <footer><a href="/">← Explore the interactive portfolio city</a></footer>
 </article>`

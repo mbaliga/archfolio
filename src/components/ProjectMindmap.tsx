@@ -21,12 +21,25 @@ const VH = 620
 const CX = VW / 2
 const CY = VH / 2
 const BR = { rx: 238, ry: 168 } // branch ring
-const LR = { rx: 392, ry: 262 } // leaf ring
+const LR = { rx: 360, ry: 262 } // leaf ring
 const SPREAD = 15 // degrees between sibling leaves
 
 const at = (deg: number, r: { rx: number; ry: number }) => {
   const a = (deg * Math.PI) / 180
   return { x: CX + r.rx * Math.cos(a), y: CY + r.ry * Math.sin(a), cos: Math.cos(a) }
+}
+
+/** Text colour that stays readable on a project's accent (some are pale). */
+const inkOn = (hex: string) => {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim())
+  if (!m) return '#ffffff'
+  const [r, g, b] = [m[1], m[2], m[3]].map((x) => {
+    const c = parseInt(x, 16) / 255
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  })
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  // White text needs the background below ~0.18 luminance for 4.5:1.
+  return lum > 0.18 ? '#1d1d1f' : '#ffffff'
 }
 
 /** A gentle curve from a to b, bowed to one side for an organic feel. */
@@ -47,13 +60,26 @@ export function ProjectMindmapView({ title, map, accent }: { title: string; map:
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
-    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width))
+    // The overlay opens by expanding from the city tile, so the width sweeps
+    // from tiny to full. Settle before choosing a layout, or the map would
+    // flip from tree to radial mid-animation.
+    let t = 0
+    setWidth(el.getBoundingClientRect().width || 1000)
+    const ro = new ResizeObserver(([e]) => {
+      window.clearTimeout(t)
+      t = window.setTimeout(() => setWidth(e.contentRect.width), 140)
+    })
     ro.observe(el)
-    return () => ro.disconnect()
+    return () => {
+      ro.disconnect()
+      window.clearTimeout(t)
+    }
   }, [])
 
   const n = map.branches.length
-  const narrow = width < 640
+  // Below this the leaf chips (real text, real size) would crowd each other,
+  // so the same map is shown as a tappable tree instead.
+  const narrow = width < 1000
   const focus = (i: number) => {
     setAll(false)
     setActive(((i % n) + n) % n)
@@ -67,6 +93,20 @@ export function ProjectMindmapView({ title, map, accent }: { title: string; map:
       e.preventDefault()
       focus(active - 1)
     }
+  }
+
+  // Where leaf j of branch i sits. Side branches fan their leaves along the
+  // outer ring; the top and bottom branches would crowd that way (the ring is
+  // nearly horizontal there), so their leaves sit in an evenly spaced row.
+  const leafAt = (i: number, j: number, k: number) => {
+    const ang = -90 + (i * 360) / n
+    const c = Math.cos((ang * Math.PI) / 180)
+    if (Math.abs(c) < 0.3) {
+      const dir = Math.sin((ang * Math.PI) / 180) < 0 ? -1 : 1
+      return { x: CX + BR.rx * c + (j - (k - 1) / 2) * 182, y: CY + dir * LR.ry, side: 'c' as const }
+    }
+    const q = at(ang + (j - (k - 1) / 2) * SPREAD, LR)
+    return { x: q.x, y: q.y, side: q.cos > 0 ? ('r' as const) : ('l' as const) }
   }
 
   const branch = map.branches[active]
@@ -96,7 +136,7 @@ export function ProjectMindmapView({ title, map, accent }: { title: string; map:
       {narrow ? (
         // ---- tree: the same map, stacked for narrow screens ----
         <div className="mm-tree" role="group" aria-label={`${title}: project map`}>
-          <div className="mm-tree__root" style={{ background: accent }}>
+          <div className="mm-tree__root" style={{ background: accent, color: inkOn(accent) }}>
             {title}
           </div>
           <ol className="mt-3 flex flex-col gap-2">
@@ -157,8 +197,7 @@ export function ProjectMindmapView({ title, map, accent }: { title: string; map:
                     <path d={curve(CX, CY, p.x, p.y)} className="mm-trunk" style={{ stroke: on ? h : undefined, opacity: on ? 1 : 0.55 }} />
                     {on &&
                       b.leaves.map((_, j) => {
-                        const la = ang + (j - (b.leaves.length - 1) / 2) * SPREAD
-                        const q = at(la, LR)
+                        const q = leafAt(i, j, b.leaves.length)
                         return (
                           <path
                             key={`${j}-${beat}`}
@@ -175,7 +214,7 @@ export function ProjectMindmapView({ title, map, accent }: { title: string; map:
             </svg>
 
             {/* centre */}
-            <div className="mm-center" style={{ background: accent, left: '50%', top: '50%' }}>
+            <div className="mm-center" style={{ background: accent, color: inkOn(accent), left: '50%', top: '50%' }}>
               {title}
             </div>
 
@@ -203,12 +242,14 @@ export function ProjectMindmapView({ title, map, accent }: { title: string; map:
             {/* leaves */}
             {map.branches.map((b, i) => {
               if (!(all || i === active)) return null
-              const ang = -90 + (i * 360) / n
               const h = HUES[i % HUES.length]
               return b.leaves.map((l, j) => {
-                const la = ang + (j - (b.leaves.length - 1) / 2) * SPREAD
-                const q = at(la, LR)
-                const side = q.cos > 0.28 ? 'r' : q.cos < -0.28 ? 'l' : 'c'
+                const q = leafAt(i, j, b.leaves.length)
+                const side = q.side
+                // Edge leaves extend outward from their anchor; cap their width by
+                // the room left before the map's edge so long labels wrap, not spill.
+                const room = side === 'r' ? VW - q.x : side === 'l' ? q.x : VW
+                const maxW = Math.min(chipMax, (room / VW) * width - 10)
                 return (
                   <span
                     key={`${i}-${j}-${beat}`}
@@ -216,7 +257,7 @@ export function ProjectMindmapView({ title, map, accent }: { title: string; map:
                     style={{
                       left: `${(q.x / VW) * 100}%`,
                       top: `${(q.y / VH) * 100}%`,
-                      maxWidth: chipMax,
+                      maxWidth: maxW,
                       ['--h' as string]: h,
                       animationDelay: `${120 + j * 60}ms`,
                     }}
