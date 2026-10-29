@@ -1325,6 +1325,7 @@ function ScrollRail({ rootRef, deps }: { rootRef: RefObject<HTMLDivElement>; dep
 /** The original fixed section sequence; studies may override via `order`. */
 export const DEFAULT_ORDER = [
   'hero',
+  'glance',
   'highlights',
   'figures',
   'closerLook',
@@ -1347,6 +1348,7 @@ export const DEFAULT_ORDER = [
   'gamification',
   'capabilities',
   'techHandoff',
+  'reflection',
   'role',
   'related',
 ]
@@ -1605,6 +1607,65 @@ export function CaseStudy({ data, onNavigate }: CaseStudyProps) {
   }
 
   const sections: Record<string, () => ReactNode> = {
+    // ---- at a glance: role, team and timeline up front -------------------
+    // Recruiters skim the top of a case study; this puts the facts they look
+    // for first under the hero, built only from the study's own meta and role
+    // data. Studies that author their own `snapshot` keep that instead.
+    glance: () => {
+      if (data.snapshot || !data.role) return null
+      const ownLabel: Record<string, string> = {
+        solo: 'Solo designer',
+        lead: 'Lead designer',
+        collab: 'Co-designer, shared ownership',
+        support: 'Supporting designer',
+      }
+      const items = [
+        { k: 'My role', v: data.role.role },
+        { k: 'Ownership', v: ownLabel[data.role.ownershipType] },
+        { k: 'Timeline', v: data.role.timeline || data.meta.timeline },
+        { k: 'Team', v: data.role.team },
+        { k: 'Status', v: data.meta.status },
+        { k: 'Tools & methods', v: data.role.tools.join(' · ') },
+      ].filter((i) => i.v)
+      return (
+        <section className="section section--tight" id="cs-glance" data-cs-section style={{ scrollMarginTop: 64 }}>
+          <div className="wrap reveal">
+            <p className="eyebrow">At a glance</p>
+            <dl className="snap">
+              {items.map((it) => (
+                <div className="snap__item" key={it.k}>
+                  <dt>{it.k}</dt>
+                  <dd>{it.v}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+      )
+    },
+    // ---- reflection: what didn't work, what was learned, what's next --------
+    reflection: () =>
+      data.reflection && (
+        <section className="section section--gray" id="cs-reflection" data-cs-section style={{ scrollMarginTop: 64 }}>
+          <div className="wrap--wide reveal" style={{ margin: '0 auto' }}>
+            <p className="eyebrow">{data.reflection.eyebrow}</p>
+            <h2 className="h-sub" style={{ marginBottom: 18 }}>{data.reflection.headline}</h2>
+            {data.reflection.lead && <p className="lead">{rich(data.reflection.lead)}</p>}
+            <div className="refl">
+              {data.reflection.columns.map((c, i) => (
+                <div className="refl__col" key={c.label} data-i={i}>
+                  <h3>{c.label}</h3>
+                  <ul>
+                    {c.points.map((pt) => (
+                      <li key={pt}>{rich(pt)}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ),
     // ---- long-form UX sections (opt-in via `order`; not in DEFAULT_ORDER) ----
     snapshot: () =>
       data.snapshot && (

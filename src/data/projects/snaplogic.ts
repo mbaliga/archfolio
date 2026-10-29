@@ -230,8 +230,39 @@ export const SNAPLOGIC_CASE_STUDY: RichCaseStudy = {
     modal: null,
   },
 
+  reflection: {
+    eyebrow: 'Reflection',
+    headline: 'What didn’t work, what I learned, what’s next.',
+    columns: [
+      {
+        label: 'What didn’t work',
+        points: [
+          'The 40% is a **floor, not a field result**. It came from automated Playwright tests on five representative tasks, which measure the shortest path, not what users do when they guess wrong.',
+          'The docs lived on Confluence, which was never built for external product documentation, so the redesign had to bring structure the platform didn’t provide.',
+          'Search couldn’t carry the load. Users over-relied on it because browsing failed them; better search alone would not have fixed navigation.',
+        ],
+      },
+      {
+        label: 'What I learned',
+        points: [
+          'People arrive with two mental models, product and task. Supporting both beat forcing one.',
+          'Established IA research settles stakeholder debates faster than opinion does.',
+          'Automated tests make a UX claim repeatable, but they need moderated sessions beside them.',
+        ],
+      },
+      {
+        label: 'What I’d do next',
+        points: [
+          'Run moderated sessions with first-time and expert users to measure real paths, not just floor numbers.',
+          'Track **search reliance** and **support-ticket volume** after launch, the two problems that started the project.',
+          'Measure how often AI Overview and DocGPT answers end a search, versus send people back to browse.',
+        ],
+      },
+    ],
+  },
+
   role: {
-    role: 'Sole Product Designer — Documentation Team',
+    role: 'Sole Product Designer, Documentation Team',
     ownershipType: 'solo',
     ownership:
       "Owned the IA, dual-navigation system, AI Overview & DocGPT surfaces, illustration guide, and responsive design end to end. Drove alignment with senior tech writers, department heads, and international managers, and secured approvals from SnapLogic's in-house design team.",

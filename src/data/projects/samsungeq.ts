@@ -383,6 +383,37 @@ export const SAMSUNG_EQ_CASE_STUDY: RichCaseStudy = {
       'These describe the shape of the work, not its impact. The programme concluded in a framework and a final presentation to Samsung — there is no validated before-and-after metric here, and none is claimed. A fixed four-month deadline also kept the research scoped to what the team could run in that window.',
   },
 
+  reflection: {
+    eyebrow: 'Reflection',
+    headline: 'What didn’t work, what I learned, what’s next.',
+    columns: [
+      {
+        label: 'What didn’t work',
+        points: [
+          'The research was scoped by the clock. A fixed four-month programme meant **18 survey respondents** and campus-only fieldwork.',
+          'The second axis is hard to prove. You can’t ask someone about a feeling they’re unaware of, so the unconscious level can only be inferred.',
+          'We don’t know whether Samsung carried the framework further, so there is no adoption story to tell.',
+        ],
+      },
+      {
+        label: 'What I learned',
+        points: [
+          'An open brief only counts if it lands on something a team can pick up and use.',
+          'When two independent research tracks converge, the overlap is the finding.',
+          'Leading a team of four meant sequencing the work so each step made the next one possible.',
+        ],
+      },
+      {
+        label: 'What I’d do next',
+        points: [
+          'Test the framework beyond campus, with people outside Gen Z.',
+          'Validate the principles on a second journey before treating them as general.',
+          'Pair the consciousness readings with behavioural signals, such as hesitation or repeat interactions.',
+        ],
+      },
+    ],
+  },
+
   role: {
     role: 'Project lead · researcher and designer',
     ownershipType: 'lead',

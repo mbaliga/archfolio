@@ -503,6 +503,37 @@ export const VED_CASE_STUDY: RichCaseStudy = {
     },
   },
 
+  reflection: {
+    eyebrow: 'Reflection',
+    headline: 'What didn’t work, what I learned, what’s next.',
+    columns: [
+      {
+        label: 'What didn’t work',
+        points: [
+          'One surface for two opposed authors was the hardest call. We explored **three canvas architectures** against four core authoring tasks before progressive disclosure resolved the tension.',
+          'Inline AI suggestions, the obvious first pattern, didn’t fit. DITA authoring needs multi-step reasoning across conditions, variables and cross-references, so we moved to a conversational layer.',
+          'There are **no validated metrics yet**. V2 is still in engineering build, so the impact half of this story is unwritten.',
+        ],
+      },
+      {
+        label: 'What I learned',
+        points: [
+          'Progressive disclosure is a product decision, not just a UI pattern: it decides who the product serves at each moment.',
+          'In an AI product, governing prompts matters as much as generating answers. Treating prompts as versioned, rated assets made AI quality something a content manager could own.',
+          'Designing inside the scrum, with annotated DITA semantics and a token map, kept the structure engineering depends on intact through handoff.',
+        ],
+      },
+      {
+        label: 'What I’d do next',
+        points: [
+          'Instrument **reuse rate** and **time-to-publish** from launch: the two numbers that prove the structured model pays off.',
+          'Run moderated sessions with department authors on the no-code conditional flow, the feature that most depends on non-technical users.',
+          'Track prompt quality scores against how often authors accept or edit the AI’s output.',
+        ],
+      },
+    ],
+  },
+
   role: {
     role: 'Product Designer',
     ownershipType: 'collab',

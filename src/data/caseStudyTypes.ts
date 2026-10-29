@@ -320,6 +320,18 @@ export interface CSExplainer {
 
 // ── Sections for full, long-form UX case studies (first used by iZak) ──────
 
+/**
+ * The candid close of a case study: what didn't work or held the work back,
+ * what was learned, and what comes next. Every point must rest on something
+ * the study already documents; nothing here is a new result.
+ */
+export interface CSReflection {
+  eyebrow: string
+  headline: string
+  lead?: string
+  columns: Array<{ label: string; points: string[] }>
+}
+
 /** Key facts in a compact grid, shown near the top. */
 export interface CSSnapshot {
   eyebrow?: string
@@ -582,6 +594,7 @@ export interface RichCaseStudy {
   /** Optional local-nav override: [section id, label]. */
   nav?: Array<{ id: string; label: string }>
   snapshot?: CSSnapshot
+  reflection?: CSReflection
   personas?: CSPersonas
   featureTiers?: CSFeatureTiers
   ia?: CSIa

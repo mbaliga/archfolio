@@ -278,6 +278,37 @@ export const REVEE_CASE_STUDY: RichCaseStudy = {
     modal: null,
   },
 
+  reflection: {
+    eyebrow: 'Reflection',
+    headline: 'What didn’t work, what I learned, what’s next.',
+    columns: [
+      {
+        label: 'What didn’t work',
+        points: [
+          'Validation stopped at standards. The UI was tested against ten-foot UX guidance and remote-control constraints, **not in living rooms with real households**.',
+          'The lead didn’t last. When the competitive audit was re-run in July 2026, interactivity, advertiser insight and cross-app continuity were no longer Mo and Revee’s alone.',
+          'A points system turns into a slot machine easily. Some motivation drives had to be refused outright, giving up engagement levers that would have looked good on a dashboard.',
+        ],
+      },
+      {
+        label: 'What I learned',
+        points: [
+          'On a shared screen, identity comes first: profiles shape everything the household sees.',
+          'Advertising can be a companion instead of an interruption, if it sits beside the content rather than over it.',
+          'Designing for two markets at once, India and the USA, forces decisions to rest on behaviour rather than one culture’s habits.',
+        ],
+      },
+      {
+        label: 'What I’d do next',
+        points: [
+          'Run in-home sessions to test the lean-back flows and companion ads with real households.',
+          'Measure **ad recall** and viewer annoyance for companion ads against standard breaks.',
+          'Track whether continuity cards actually bring people back to unfinished sessions.',
+        ],
+      },
+    ],
+  },
+
   role: {
     role: 'Product Designer, end-to-end',
     ownershipType: 'lead',
