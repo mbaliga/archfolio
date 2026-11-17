@@ -23,3 +23,7 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 - `README.md` — this file
 - `chats/` — conversation transcripts (read these!)
 - `project/` — the `Prachi’s Portfolio` project files (HTML prototypes, assets, components)
+
+## Licence
+
+All rights reserved. No licence is granted; see [LICENSE](LICENSE).
