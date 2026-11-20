@@ -1,8 +1,14 @@
 import type { ReactNode } from 'react'
+import type { HyderabadClock } from '../lib/sky'
+import type { Weather } from '../lib/weather'
 
 interface TagPillsProps {
   activeTag: string | null
   onChange: (tag: string | null) => void
+  /** Hyderabad time + weather — shown as the leading pill on mobile, where
+      there's no room for the standalone bottom bar the desktop layout uses. */
+  time: HyderabadClock
+  weather: Weather | null
 }
 
 // Maps-style category pills, but for project tags. Clicking one highlights
@@ -17,21 +23,44 @@ const TAGS: { tag: string; icon: ReactNode }[] = [
   { tag: 'UX Research', icon: <LensIcon /> },
 ]
 
-export function TagPills({ activeTag, onChange }: TagPillsProps) {
+export function TagPills({ activeTag, onChange, time, weather }: TagPillsProps) {
+  // Mobile: full-width scroll row under the search bar. Desktop: anchored
+  // right after the search box (Google-Maps style) with room for every pill —
+  // no clipping until the window gets genuinely narrow.
   return (
-    <div className="pointer-events-none absolute left-0 right-0 top-[calc(0.75rem+env(safe-area-inset-top)+52px)] z-30 flex max-w-full gap-2 overflow-x-auto px-3 [scrollbar-width:none] sm:left-1/2 sm:right-auto sm:top-4 sm:max-w-[min(620px,62vw)] sm:-translate-x-1/2 sm:px-2 [&::-webkit-scrollbar]:hidden">
+    <div className="pointer-events-none absolute left-0 right-0 top-[calc(0.75rem+env(safe-area-inset-top)+46px)] z-30 flex max-w-full gap-2 overflow-x-auto px-3 [scrollbar-width:none] sm:left-[400px] sm:right-auto sm:top-4 sm:max-w-[calc(100vw-700px)] sm:px-0 [&::-webkit-scrollbar]:hidden">
+      {/* Weather/time — the leading pill on mobile only (desktop keeps the
+          standalone pill below the search box). Scrolls with the row as its
+          first item, matching the filter chips' shape. Non-interactive. */}
+      <div
+        data-tip="Live time & weather in Hyderabad — the city's sky follows it"
+        data-tip-pos="bottom"
+        className="hud hud-text pointer-events-auto flex flex-shrink-0 items-center gap-[5px] rounded-full border px-[13px] py-[7px] text-[12px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.08)] backdrop-blur-md sm:hidden"
+      >
+        <span className="tabular-nums">{time.label} {time.period}</span>
+        {weather && (
+          <>
+            <span className="hud-soft">·</span>
+            <span className="hud-soft tabular-nums">{weather.tempC}°</span>
+            <span aria-hidden title={weather.label}>{weather.icon}</span>
+          </>
+        )}
+      </div>
+
       {TAGS.map(({ tag, icon }) => {
         const active = activeTag === tag
         return (
           <button
             key={tag}
+            data-tip={active ? 'Clear filter' : `Highlight ${tag} projects`}
+            data-tip-pos="bottom"
             onClick={() => onChange(active ? null : tag)}
             className={[
               'pointer-events-auto flex flex-shrink-0 items-center gap-[6px] rounded-full border px-[13px] py-[7px]',
               'text-[12px] font-medium shadow-[0_2px_10px_rgba(0,0,0,0.08)] backdrop-blur-md transition-colors',
               active
-                ? 'border-ink bg-ink text-paper'
-                : 'border-black/10 bg-white/90 text-ink hover:bg-white',
+                ? 'hud-on'
+                : 'hud hud-text hud-hover',
             ].join(' ')}
           >
             <span className="flex-shrink-0">{icon}</span>

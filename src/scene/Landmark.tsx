@@ -3,8 +3,8 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Billboard, Text } from '@react-three/drei'
 import { Group, MeshStandardMaterial, type Object3D } from 'three'
 import { easing } from 'maath'
-import type { Landmark as LandmarkData, LandmarkKind, ViewMode } from '../types'
-import { ISO_FLATTEN, type LandmarkDef } from './lib/cityModel'
+import type { Landmark as LandmarkData, LandmarkKind } from '../types'
+import { type LandmarkDef } from './lib/cityModel'
 import interBold from '@fontsource/inter/files/inter-latin-800-normal.woff'
 
 const CIVIC_GREY = '#bcb6a8'
@@ -13,12 +13,11 @@ interface LandmarkProps {
   def: LandmarkDef
   hovered: boolean
   showLabel: boolean
-  view: ViewMode
   onHover: (id: string | null) => void
   onSelect: (landmark: LandmarkData, object: Object3D) => void
 }
 
-export function Landmark({ def, hovered, showLabel, view, onHover, onSelect }: LandmarkProps) {
+export function Landmark({ def, hovered, showLabel, onHover, onSelect }: LandmarkProps) {
   const { landmark, footprint: w } = def
   const liftRef = useRef<Group>(null)
   const labelRef = useRef<Group>(null)
@@ -37,8 +36,8 @@ export function Landmark({ def, hovered, showLabel, view, onHover, onSelect }: L
   useEffect(() => () => grey.dispose(), [grey])
 
   useFrame((_, dt) => {
-    // Cancel the world's iso y-flatten on the sign so it doesn't squash.
-    if (labelRef.current) easing.damp(labelRef.current.scale, 'y', view === 'iso' ? 1 / ISO_FLATTEN : 1, 0.22, dt)
+    // World keeps full height in every view now, so the sign needs no counter-scale.
+    if (labelRef.current) easing.damp(labelRef.current.scale, 'y', 1, 0.22, dt)
     // Hover glows the landmark rather than lifting it.
     easing.damp(grey, 'emissiveIntensity', hovered ? 0.38 : 0, 0.12, dt)
   })
@@ -128,14 +127,20 @@ function Silhouette({
     case 'stadium':
       return (
         <group scale={[1, 1, 0.72]}>
+          {/* Lower stand ring */}
           <mesh position={[0, 1.6, 0]} rotation={[Math.PI / 2, 0, 0]} material={grey} castShadow receiveShadow>
             <torusGeometry args={[w * 0.42, w * 0.12, 10, 28]} />
           </mesh>
-          <mesh position={[0, 2.6, 0]} rotation={[Math.PI / 2, 0, 0]} material={grey} castShadow>
-            <torusGeometry args={[w * 0.3, w * 0.08, 10, 28]} />
+          {/* Upper stand ring — raised and slimmed so its tube can't cross the
+              lower ring's (the two tori previously intersected, z-fighting
+              wherever their surfaces overlapped). */}
+          <mesh position={[0, 3.3, 0]} rotation={[Math.PI / 2, 0, 0]} material={grey} castShadow>
+            <torusGeometry args={[w * 0.3, w * 0.05, 10, 28]} />
           </mesh>
+          {/* Pitch — sits just below the platform top (y=0.5) so it no
+              longer shares a coplanar face with the base box. */}
           <mesh position={[0, 0.3, 0]}>
-            <cylinderGeometry args={[w * 0.34, w * 0.34, 0.4, 28]} />
+            <cylinderGeometry args={[w * 0.34, w * 0.34, 0.36, 28]} />
             <meshStandardMaterial color={accent} roughness={0.85} />
           </mesh>
         </group>

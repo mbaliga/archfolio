@@ -8,7 +8,6 @@ import {
   districtFor,
   resolveRoofStyle,
   polar,
-  pointToSegDist,
   sampleCatmullRom,
   LOT,
   type District,
@@ -56,9 +55,11 @@ export const LANDMARK_DEFS: LandmarkDef[] = LANDMARKS.map((l) => ({
 }))
 
 // Civic clock tower — a fixed monument near the plaza that keeps Hyderabad time.
-// Sits off the avenues/spokes so it claims a clear plot; registered as an anchor
-// so roads skirt it and scenery doesn't grow over it.
-export const CLOCK_TOWER = { position: [6, 0, 21] as [number, number, number], footprint: 5 }
+export const CLOCK_TOWER = { position: [LOT * 3, 0, LOT * 2] as [number, number, number], footprint: 5 }
+
+// Lighthouse — stands near The Past gateway (z ≈ 175), throws a rotating beam
+// at night. Placed slightly off the central avenue so the gateway label reads.
+export const LIGHTHOUSE = { position: [22, 0, 158] as [number, number, number], footprint: 7 }
 
 // Fixed plots the roads must avoid and scenery must not occupy.
 interface Anchor {
@@ -70,6 +71,7 @@ const ANCHORS: Anchor[] = [
   ...BUILDINGS.map((b) => ({ x: b.position[0], z: b.position[2], clearance: b.footprint * 0.5 + 3 })),
   ...LANDMARK_DEFS.map((l) => ({ x: l.position[0], z: l.position[2], clearance: l.footprint * 0.5 + 3 })),
   { x: CLOCK_TOWER.position[0], z: CLOCK_TOWER.position[2], clearance: CLOCK_TOWER.footprint * 0.5 + 1 },
+  { x: LIGHTHOUSE.position[0],  z: LIGHTHOUSE.position[2],  clearance: LIGHTHOUSE.footprint * 0.5 + 2 },
 ]
 
 function mulberry32(seed: number): () => number {
@@ -115,20 +117,28 @@ export interface Parcel {
   occupied: boolean
 }
 
-const PLAZA_R = 9
-const RING_RADII = [15, 30, 45, 60]
+const PLAZA_R = 14
+export const RING_RADII = [30, 60, 90]
+export const RING_ROAD_W = 3.8   // width of each ring road (= STREET_W)
 const SECTORS = 12
-const OUTER = 64
-const AVENUE_W = 3.6
-const STREET_W = 2.0
+const OUTER = 96
+const AVENUE_W = 5.5
+const STREET_W = RING_ROAD_W
 
 function buildRoadNetwork(): { roads: RoadPath[]; parcels: Parcel[] } {
   const rng = mulberry32(13371)
   const roads: RoadPath[] = []
 
-  // Avenues — the two straight axes through the roundabout (the named cardinals).
-  roads.push({ id: 'ave-x', kind: 'avenue', width: AVENUE_W, closed: false, pts: [{ x: -OUTER, z: 0 }, { x: OUTER, z: 0 }] })
-  roads.push({ id: 'ave-z', kind: 'avenue', width: AVENUE_W, closed: false, pts: [{ x: 0, z: -OUTER }, { x: 0, z: OUTER }] })
+  // Avenues — the named cardinals. Split around the central roundabout so they
+  // FEED it from four sides instead of crossing straight through the monument
+  // (which left two coplanar road slabs fighting over the plaza centre).
+  // East/west avenues terminate ON the outer ring (junction), not past it;
+  // the north/south pair runs to OUTER where the gateway fades take over.
+  const RING_END = 92
+  roads.push({ id: 'ave-x-w', kind: 'avenue', width: AVENUE_W, closed: false, pts: [{ x: -RING_END, z: 0 }, { x: -PLAZA_R, z: 0 }] })
+  roads.push({ id: 'ave-x-e', kind: 'avenue', width: AVENUE_W, closed: false, pts: [{ x: PLAZA_R, z: 0 }, { x: RING_END, z: 0 }] })
+  roads.push({ id: 'ave-z-n', kind: 'avenue', width: AVENUE_W, closed: false, pts: [{ x: 0, z: -OUTER }, { x: 0, z: -PLAZA_R }] })
+  roads.push({ id: 'ave-z-s', kind: 'avenue', width: AVENUE_W, closed: false, pts: [{ x: 0, z: PLAZA_R }, { x: 0, z: OUTER }] })
 
   // Rings — jittered closed loops (organic, not perfect circles).
   RING_RADII.forEach((R, ri) => {
@@ -137,21 +147,25 @@ function buildRoadNetwork(): { roads: RoadPath[]; parcels: Parcel[] } {
       const theta = (i / SECTORS) * Math.PI * 2
       ctrl.push(polar(0, 0, R + (rng() - 0.5) * 5, theta))
     }
-    roads.push({ id: `ring-${ri}`, kind: 'ring', width: STREET_W, closed: true, pts: sampleCatmullRom(ctrl, 5, true) })
+    roads.push({ id: `ring-${ri}`, kind: 'ring', width: STREET_W, closed: true, pts: sampleCatmullRom(ctrl, 9, true) })
   })
 
-  // Spokes — non-cardinal radials with a gentle lateral bow.
-  const spokeAngles = [30, 60, 120, 150, 210, 240, 300, 330].map((d) => (d * Math.PI) / 180)
-  spokeAngles.forEach((base, si) => {
+  // Diagonal grand boulevards — four clean 45-degree avenues radiating from
+  // the plaza, like La Diagonal in Barcelona. Perfectly straight (no bow) so
+  // they read as deliberate planned infrastructure.
+  const diagonalAngles = [45, 135, 225, 315].map((d) => (d * Math.PI) / 180)
+  diagonalAngles.forEach((base, si) => {
     const pts: Pt[] = []
-    const steps = 6
-    const bow = (rng() - 0.5) * 0.18
+    const steps = 12
+    // End exactly on the outer ring so each boulevard terminates in a proper
+    // junction instead of a stub trailing into the grass.
+    const DIAG_END = 92
     for (let s = 0; s <= steps; s++) {
       const t = s / steps
-      const r = PLAZA_R + t * (OUTER - PLAZA_R)
-      pts.push(polar(0, 0, r, base + Math.sin(t * Math.PI) * bow))
+      const r = PLAZA_R + t * (DIAG_END - PLAZA_R)
+      pts.push(polar(0, 0, r, base))
     }
-    roads.push({ id: `spoke-${si}`, kind: 'spoke', width: STREET_W, closed: false, pts })
+    roads.push({ id: `diag-${si}`, kind: 'spoke', width: AVENUE_W, closed: false, pts })
   })
 
   // Parcels — annular sectors between consecutive rings.
@@ -200,17 +214,113 @@ function pathToSegs(p: RoadPath): RoadSeg[] {
   return segs
 }
 
-function segClearsAnchors(s: RoadSeg): boolean {
+// Clip a segment against the plot-clearance discs. The old behaviour DROPPED
+// any segment that grazed a plot, which punched visible holes in the diagonal
+// boulevards — roads that just stopped and restarted mid-field. Instead, keep
+// the parts of each segment that lie OUTSIDE every disc, so the carriageway
+// runs right up to the building's forecourt and ends there deliberately (the
+// walkway/apron layer bridges the last few metres to the entrance).
+function clipSegToAnchors(s: RoadSeg): RoadSeg[] {
+  const dx = s.bx - s.ax
+  const dz = s.bz - s.az
+  const len2 = dx * dx + dz * dz || 1
+  const len = Math.sqrt(len2)
+  const holes: Array<[number, number]> = []
   for (const a of ANCHORS) {
-    if (pointToSegDist(a.x, a.z, s.ax, s.az, s.bx, s.bz) < a.clearance + s.width * 0.5) return false
+    const r = a.clearance + s.width * 0.5
+    const t = ((a.x - s.ax) * dx + (a.z - s.az) * dz) / len2
+    const d = Math.hypot(a.x - (s.ax + dx * t), a.z - (s.az + dz * t))
+    if (d >= r) continue // segment's line misses this disc
+    const half = Math.sqrt(r * r - d * d) / len
+    const t0 = t - half
+    const t1 = t + half
+    if (t1 <= 0 || t0 >= 1) continue
+    holes.push([Math.max(0, t0), Math.min(1, t1)])
   }
-  return true
+  if (holes.length === 0) return [s]
+  holes.sort((h1, h2) => h1[0] - h2[0])
+  const merged: Array<[number, number]> = []
+  for (const h of holes) {
+    const last = merged[merged.length - 1]
+    if (last && h[0] <= last[1]) last[1] = Math.max(last[1], h[1])
+    else merged.push([h[0], h[1]])
+  }
+  const out: RoadSeg[] = []
+  const MIN_LEN = 1.6 // drop unreadable slivers
+  let cur = 0
+  for (const [h0, h1] of merged) {
+    if ((h0 - cur) * len >= MIN_LEN)
+      out.push({ ax: s.ax + dx * cur, az: s.az + dz * cur, bx: s.ax + dx * h0, bz: s.az + dz * h0, width: s.width })
+    cur = Math.max(cur, h1)
+  }
+  if ((1 - cur) * len >= MIN_LEN)
+    out.push({ ax: s.ax + dx * cur, az: s.az + dz * cur, bx: s.bx, bz: s.bz, width: s.width })
+  return out
 }
 
 const NETWORK = buildRoadNetwork()
 export const ROADS: RoadPath[] = NETWORK.roads
 export const PARCELS: Parcel[] = NETWORK.parcels
-export const ROAD_SEGS: RoadSeg[] = ROADS.flatMap(pathToSegs).filter(segClearsAnchors)
+export const ROAD_SEGS: RoadSeg[] = ROADS.flatMap(pathToSegs).flatMap(clipSegToAnchors)
+// Non-ring segments only — rings are rendered as flat ringGeometry in Roads.tsx for smooth circles.
+export const ROAD_SEGS_DRAW: RoadSeg[] = ROADS.filter((r) => r.kind !== 'ring').flatMap(pathToSegs).flatMap(clipSegToAnchors)
+
+// --- Connector driveways: tie every building & landmark to the road network ---
+// Buildings live on a square grid; the roads are a polar ring/spoke system, so
+// most plots don't sit on a road. For each plot we drop a short footpath from
+// its edge to the closest point on the nearest road, so nothing reads as
+// "floating" and the network visibly reaches every door.
+const CONNECTOR_W = 2.8
+
+function nearestPointOnSegs(px: number, pz: number, segs: RoadSeg[]): { x: number; z: number; dist: number } {
+  let bx = 0
+  let bz = 0
+  let best = Infinity
+  for (const s of segs) {
+    const dx = s.bx - s.ax
+    const dz = s.bz - s.az
+    const len2 = dx * dx + dz * dz || 1
+    let t = ((px - s.ax) * dx + (pz - s.az) * dz) / len2
+    t = Math.max(0, Math.min(1, t))
+    const cx = s.ax + dx * t
+    const cz = s.az + dz * t
+    const d = Math.hypot(px - cx, pz - cz)
+    if (d < best) {
+      best = d
+      bx = cx
+      bz = cz
+    }
+  }
+  return { x: bx, z: bz, dist: best }
+}
+
+function buildConnectors(): RoadSeg[] {
+  const out: RoadSeg[] = []
+  const plots = [
+    ...BUILDINGS.map((b) => ({ x: b.position[0], z: b.position[2], r: b.footprint * 0.5 })),
+    ...LANDMARK_DEFS.map((l) => ({ x: l.position[0], z: l.position[2], r: l.footprint * 0.5 })),
+  ]
+  for (const p of plots) {
+    const near = nearestPointOnSegs(p.x, p.z, ROAD_SEGS)
+    const dx = near.x - p.x
+    const dz = near.z - p.z
+    const d = Math.hypot(dx, dz)
+    if (d < p.r + 1) continue // already meets a road
+    if (d > 52) continue // unreachably far — don't draw a runway across the map
+    const ux = dx / d
+    const uz = dz / d
+    out.push({
+      ax: p.x + ux * p.r, // start flush at the building edge
+      az: p.z + uz * p.r,
+      bx: near.x, // end on the road centre-line (forms a clean T-join)
+      bz: near.z,
+      width: CONNECTOR_W,
+    })
+  }
+  return out
+}
+
+export const CONNECTOR_SEGS: RoadSeg[] = buildConnectors()
 
 // Gateway avenues — the main Z axis runs out of the city in both directions:
 // the future recedes ahead (−Z, into the fog), the past trails behind (+Z).
@@ -223,8 +333,8 @@ export const GATEWAY_SEGS: RoadSeg[] = [
 // World-space label anchors for the two gateway ends (near the reachable edge so
 // they read at the avenue's vanishing point before fading into the fog beyond).
 export const GATEWAYS = [
-  { id: 'future', label: 'The Future', z: -140 },
-  { id: 'past', label: 'The Past', z: 140 },
+  { id: 'future', label: 'The Future', z: -175 },
+  { id: 'past', label: 'The Past', z: 175 },
 ] as const
 
 // --- Richer city: grey scenery buildings filling empty parcels ---------------
@@ -244,12 +354,12 @@ function buildScenery(): SceneryDef[] {
   for (const parcel of PARCELS) {
     if (parcel.occupied) continue
     if (rng() < 0.12) continue
-    const count = 2 + Math.floor(rng() * 3) // 2..4 per parcel
+    const count = 2 + Math.floor(rng() * 3) // 2..4 per parcel — a denser Amalfi town
     for (let i = 0; i < count; i++) {
-      const r = (parcel.rInner + parcel.rOuter) / 2 + (rng() - 0.5) * parcel.approxW * 0.6
-      const theta = parcel.thetaMid + (rng() - 0.5) * ((parcel.approxD * 0.6) / Math.max(parcel.rInner, 1))
+      const r = (parcel.rInner + parcel.rOuter) / 2 + (rng() - 0.5) * parcel.approxW * 0.75
+      const theta = parcel.thetaMid + (rng() - 0.5) * ((parcel.approxD * 0.75) / Math.max(parcel.rInner, 1))
       const p = polar(0, 0, r, theta)
-      const w = 2.2 + rng() * 2.0
+      const w = 2.4 + rng() * 2.4
       const d = w * (0.7 + rng() * 0.3)
       const coreFactor = 1 - parcel.ringIndex * 0.24
       const h = Math.min(24, (4 + rng() * 8) * (0.85 + coreFactor * 0.7))
@@ -282,6 +392,10 @@ export interface PropDef {
 
 const GRID_STEPS = [-6, -4, -2, 0, 2, 4, 6]
 
+// Exclusion zone around the central plaza — trees inside this radius are skipped.
+// Slightly larger than TERRACE_R=27 so props from inner grid positions can't scatter in.
+const PROP_EXCL_R2 = 30 * 30
+
 function buildProps(): PropDef[] {
   const rng = mulberry32(20260526)
   const occupied = new Set<string>([
@@ -298,13 +412,12 @@ function buildProps(): PropDef[] {
     const kind: PropKind = f.glyph === 'rocks' ? 'rock' : 'tree'
     const count = kind === 'tree' ? 3 : 2
     for (let i = 0; i < count; i++) {
-      props.push({
-        id: `${f.id}-${i}`,
-        kind,
-        position: [x + (rng() - 0.5) * LOT * 0.9, 0, z + (rng() - 0.5) * LOT * 0.9],
-        rotationY: rng() * Math.PI * 2,
-        scale: 0.7 + rng() * 0.6,
-      })
+      const px = x + (rng() - 0.5) * LOT * 0.9
+      const pz = z + (rng() - 0.5) * LOT * 0.9
+      const ry = rng() * Math.PI * 2
+      const sc = 0.7 + rng() * 0.6
+      if (px * px + pz * pz < PROP_EXCL_R2) continue
+      props.push({ id: `${f.id}-${i}`, kind, position: [px, 0, pz], rotationY: ry, scale: sc })
     }
   }
 
@@ -313,17 +426,16 @@ function buildProps(): PropDef[] {
     for (const gy of GRID_STEPS) {
       if (gx === 0 || gy === 0) continue
       if (occupied.has(`${gx},${gy}`)) continue
-      if (rng() < 0.4) continue
+      if (rng() < 0.6) continue
       const [x, , z] = gridToWorld(gx, gy)
-      const count = 2 + Math.floor(rng() * 2)
+      const count = 1 + Math.floor(rng() * 2)
       for (let i = 0; i < count; i++) {
-        props.push({
-          id: `t-${gx}-${gy}-${i}`,
-          kind: 'tree',
-          position: [x + (rng() - 0.5) * LOT, 0, z + (rng() - 0.5) * LOT],
-          rotationY: rng() * Math.PI * 2,
-          scale: 0.6 + rng() * 0.5,
-        })
+        const px = x + (rng() - 0.5) * LOT
+        const pz = z + (rng() - 0.5) * LOT
+        const ry = rng() * Math.PI * 2
+        const sc = 0.6 + rng() * 0.5
+        if (px * px + pz * pz < PROP_EXCL_R2) continue
+        props.push({ id: `t-${gx}-${gy}-${i}`, kind: 'tree', position: [px, 0, pz], rotationY: ry, scale: sc })
       }
     }
   }
@@ -331,6 +443,24 @@ function buildProps(): PropDef[] {
 }
 
 export const PROPS: PropDef[] = buildProps()
+
+// --- Skyline view: buildings packed into a single neat horizontal row ---------
+// Sorted left-to-right by natural world-X so the simple←→complex axis is
+// preserved in the silhouette. All buildings move to Z = 0 so the camera
+// can read the full skyline head-on, Marine-Drive style.
+function buildSkylinePositions(): Map<string, number> {
+  const sorted = [...BUILDINGS].sort((a, b) => a.position[0] - b.position[0])
+  const GAP = 2.5
+  const totalW = sorted.reduce((s, b) => s + b.footprint + GAP, -GAP)
+  let curX = -totalW / 2
+  const out = new Map<string, number>()
+  for (const b of sorted) {
+    out.set(b.project.id, curX + b.footprint / 2)
+    curX += b.footprint + GAP
+  }
+  return out
+}
+export const SKYLINE_POSITIONS = buildSkylinePositions()
 
 // --- Camera pan bounds -------------------------------------------------------
 function computeBounds() {
@@ -347,7 +477,7 @@ function computeBounds() {
   const pad = 14
   // Extend the Z range so the camera can follow the gateway avenues a little way
   // out of the city; their far ends still recede unreachably into the fog.
-  const gatewayReach = 60
+  const gatewayReach = 40
   return {
     minX: Math.min(...xs) - pad,
     maxX: Math.max(...xs) + pad,

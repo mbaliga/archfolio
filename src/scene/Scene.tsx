@@ -1,13 +1,30 @@
-import { Suspense, useEffect, useState } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { Loader } from '@react-three/drei'
+import { Suspense, useEffect, useRef, useState } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Environment, Loader } from '@react-three/drei'
+import { EffectComposer, Bloom } from '@react-three/postprocessing'
+import type { Points } from 'three'
 import { CameraRig, DEFAULT_CAMERA_TUPLE, type FocusTarget } from './CameraRig'
+import { CoachAnchorProbe } from './CoachAnchorProbe'
+import { MapMarkerProbe } from './MapMarkerProbe'
+import { MapMarkers } from '../components/MapMarkers'
 import { CityWorld } from './CityWorld'
 import { DayNight } from './DayNight'
+import { DaySky } from './DaySky'
+import { EnvBalloons } from './CityLife'
 import { Hero } from '../components/Hero'
 import { WeatherClock } from '../components/WeatherClock'
-import { useHyderabad } from '../lib/useHyderabad'
+import { useEntryDocked } from '../lib/useEntryDocked'
+import { useFlickerGuard } from '../lib/useFlickerGuard'
+import type { HyderabadClock } from '../lib/sky'
+import type { Weather } from '../lib/weather'
+import type { EmbedConfig } from '../lib/viewStore'
 import type { Appearance, CameraCmd, LayerState, ViewMode, Project, Landmark } from '../types'
+
+// Hover-capable, precise pointer only (no touch) — on phones the affordance
+// is already obvious from tapping, and a cursor-following chip has no sense
+// on a touchscreen.
+const canHover = () =>
+  typeof window !== 'undefined' && window.matchMedia('(hover: hover) and (pointer: fine)').matches
 
 interface SceneProps {
   appearance: Appearance
@@ -17,58 +34,291 @@ interface SceneProps {
   cameraCmd: CameraCmd | null
   onSelect: (project: Project, rect: DOMRect) => void
   onSelectLandmark: (landmark: Landmark, rect: DOMRect) => void
+  /** Hyderabad time + weather, lifted to CityExperience so the same values
+      feed the sky, the desktop weather pill here, and the mobile weather pill
+      that now leads the filter-chip row (no duplicate useHyderabad poll). */
+  time: HyderabadClock
+  weather: Weather | null
+  /** When set, boot to a captured angle and hide every HUD element (embeds). */
+  embed?: EmbedConfig | null
+  /** Fires once, the first time the canvas completes a real render pass with
+      the city geometry mounted — the "city ready" signal the shell's 3-second
+      watchdog waits on. Placed inside the same Suspense boundary as CityWorld
+      so it can't fire before the world is actually there to look at. */
+  onFirstFrame?: () => void
+  /** Fires if the WebGL context is lost after boot (GPU memory pressure — e.g.
+      a phone with many tabs open). The shell uses it to drop to the fast page
+      instead of leaving a black canvas on screen. */
+  onContextLost?: () => void
+  /** Fires if the canvas is producing repeated black-frame flicker on mobile
+      (a compositor/driver fault some phone GPUs hit even with a healthy WebGL
+      context — see useFlickerGuard). The shell uses it the same way as
+      onContextLost: drop to the flicker-free fast page. */
+  onRenderUnstable?: () => void
 }
 
-export function Scene({ appearance, layers, view, focus, cameraCmd, onSelect, onSelectLandmark }: SceneProps) {
-  const [docked, setDocked] = useState(false)
-  const { time, weather } = useHyderabad()
-  useEffect(() => {
-    const t = setTimeout(() => setDocked(true), 2400)
-    return () => clearTimeout(t)
-  }, [])
+// Fires onFirstFrame on the very first useFrame tick, then goes quiet.
+// A sibling of CityWorld inside the same <Suspense>, so this only starts
+// ticking once whatever CityWorld suspends on (if anything) has resolved.
+function FirstFrameProbe({ onReady }: { onReady?: () => void }) {
+  const firedRef = useRef(false)
+  useFrame(() => {
+    if (firedRef.current || !onReady) return
+    firedRef.current = true
+    onReady()
+  })
+  return null
+}
+
+// Slowly drifting golden motes — atmosphere that catches the light.
+function AmbientParticles() {
+  const ref = useRef<Points>(null)
+  const [positions] = useState(() => {
+    const count = 280
+    const arr = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      arr[i * 3] = (Math.random() - 0.5) * 200
+      arr[i * 3 + 1] = Math.random() * 60 + 2
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 200
+    }
+    return arr
+  })
+
+  useFrame((state) => {
+    if (!ref.current) return
+    const t = state.clock.elapsedTime * 0.04
+    ref.current.rotation.y = t * 0.15
+    ref.current.position.y = Math.sin(t * 0.5) * 1.5
+  })
+
+  return (
+    <points ref={ref}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.35}
+        color="#ffd27a"
+        transparent
+        opacity={0.4}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
+  )
+}
+
+export function Scene({ appearance, layers, view, focus, cameraCmd, onSelect, onSelectLandmark, time, weather, embed = null, onFirstFrame, onContextLost, onRenderUnstable }: SceneProps) {
+  const docked = useEntryDocked()
+  const [hoveredProject, setHoveredProject] = useState<Project | null>(null)
+  const { watch: watchForFlicker, stop: stopFlickerGuard } = useFlickerGuard(() => onRenderUnstable?.())
+  useEffect(() => stopFlickerGuard, [stopFlickerGuard])
+
+  // Detect small/touch screens once so the heavier passes (high DPR, the
+  // every-frame reflection cube map) scale down on phones for smoother fps.
+  const [isMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 820px)').matches,
+  )
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-paper animate-[worldFadeIn_900ms_100ms_both]">
-      <Canvas
-        className="scene-canvas"
-        shadows
-        dpr={[1, 2]}
-        camera={{ position: DEFAULT_CAMERA_TUPLE, fov: 40, near: 0.5, far: 2000 }}
+      <div
+        className="absolute inset-0"
+        role="application"
+        aria-label="Interactive 3D map of Prachi Mittal's projects. Each building is a project — use the search box to find one, or the project index (first link on the page) for a text version."
       >
-        {/* Lights, sky, and fog ease with Hyderabad time-of-day + weather. */}
-        <DayNight weather={weather} view={view} />
+        <Canvas
+          className="scene-canvas"
+          // Shadows are a full extra depth pass over the whole city every frame.
+          // On phones that pass, stacked on everything else, is what tips the
+          // GPU into stalling — frames freeze and the compositor intermittently
+          // shows a cleared (black) buffer, which reads as flicker. The city has
+          // plenty of form without cast shadows at phone size.
+          shadows={!isMobile}
+          // Render at 1 device pixel on mobile. At dpr 1.5 a modern phone is
+          // filling ~2.3x more pixels every frame for detail that is invisible
+          // at this screen size — the cheapest large win available.
+          dpr={isMobile ? 1 : [1, 2]}
+          // near=2 (was 0.5): the ground/road layers are stacked only
+          // 0.01-0.02 apart in y. With a 24-bit depth buffer those gaps fall
+          // below the buffer's resolution once the camera is ~150+ units
+          // away, causing the road network to z-fight/flicker on zoom-out.
+          // A larger near plane (still well inside minDistance=26) quarters
+          // that error at typical viewing distances.
+          camera={{
+            position: embed ? [embed.initial.cx, embed.initial.cy, embed.initial.cz] : DEFAULT_CAMERA_TUPLE,
+            fov: 40,
+            near: 2,
+            far: 2000,
+          }}
+          // antialias off on mobile: MSAA forces a multisampled framebuffer that
+          // must be resolved every frame — costly on phone GPUs and buggy on
+          // some drivers. At dpr 1 on a high-density screen the aliasing it
+          // would have hidden is not visible anyway. Desktop keeps AA (default).
+          gl={{ toneMappingExposure: 0.6, antialias: !isMobile }}
+          onCreated={({ gl }) => {
+            // GPU context loss (common on memory-starved phones — many tabs
+            // open) would otherwise leave a black canvas: the scene stops
+            // rendering but the shell has no idea. Catch it and hand control
+            // back so the shell can drop to the fast /projects page. We don't
+            // preventDefault — we're abandoning this canvas, not restoring it.
+            gl.domElement.addEventListener(
+              'webglcontextlost',
+              () => onContextLost?.(),
+              { once: true },
+            )
+            // Second, independent safety net for the black-frame flicker some
+            // mobile GPU/driver combos hit even with a perfectly healthy
+            // context (see useFlickerGuard). Mobile only — desktop showed no
+            // sign of this and the sampling cost isn't worth paying there.
+            if (isMobile) watchForFlicker(gl.domElement)
+          }}
+        >
+          {/* Lights, fog and time-of-day cycle. */}
+          <DayNight weather={weather} view={view} />
+          {/* Visible sky + clouds in the main scene. */}
+          <DaySky weather={weather} />
+          {/* Live environment map — captures a second copy of the sky, clouds
+              and balloons into a cube map so the glass facades mirror them.
+              far must exceed the Sky dome's distance (45000) or the sky gets
+              clipped out of the cube and the glass reflects only darkness.
+              Half resolution on mobile (256 vs 512) to cut the per-frame cost.
 
-        <Suspense fallback={null}>
-          <CityWorld
-            appearance={appearance}
-            layers={layers}
-            view={view}
-            onSelect={onSelect}
-            onSelectLandmark={onSelectLandmark}
-          />
-        </Suspense>
+              frames: DESKTOP re-renders the cube every frame so reflections
+              track the drifting clouds. MOBILE captures it ONCE. A live cube map
+              is six render-target passes per frame; on tiled mobile GPUs that
+              churn is what makes frames intermittently composite black (the
+              flicker seen on a real device), and it's the single most expensive
+              thing in the scene. Captured once, the glass still mirrors a real
+              sky — it just doesn't track drift, which is imperceptible on a
+              phone-sized facade. */}
+          <Environment
+            frames={isMobile ? 1 : Infinity}
+            resolution={isMobile ? 256 : 512}
+            background={false}
+            near={1}
+            far={100000}
+          >
+            <DaySky weather={weather} />
+            {/* colourful balloons drifting in the reflected sky */}
+            <EnvBalloons />
+          </Environment>
 
-        <CameraRig focus={focus} cmd={cameraCmd} view={view} />
-      </Canvas>
+          <Suspense fallback={null}>
+            <CityWorld
+              appearance={appearance}
+              layers={layers}
+              view={view}
+              weather={weather}
+              onSelect={onSelect}
+              onSelectLandmark={onSelectLandmark}
+              onHoverProject={setHoveredProject}
+            />
+            <AmbientParticles />
+            <FirstFrameProbe onReady={onFirstFrame} />
+          </Suspense>
 
+          <CameraRig focus={focus} cmd={cameraCmd} view={view} embed={!!embed} initial={embed?.initial ?? null} />
+          <CoachAnchorProbe />
+          <MapMarkerProbe view={view} />
+
+          {/* Bloom — only the brightest pixels (lit windows, accents, monument
+              tip) bloom, so it stays subtle by day and glows after dark.
+              DESKTOP ONLY. EffectComposer renders the scene through an offscreen
+              half-float render target; a number of mobile GPUs/drivers can't
+              render to that format and silently output a *fully black* frame
+              while the WebGL context still reports healthy — so there's no crash
+              to fall back from, just a black canvas under a working HUD. Bloom is
+              subtle enough (intensity 0.18, brightest pixels only) that skipping
+              it on phones is invisible, and it removes that failure mode plus a
+              real per-frame cost on mobile. */}
+          {!isMobile && (
+            <EffectComposer>
+              <Bloom
+                mipmapBlur
+                luminanceThreshold={0.97}
+                luminanceSmoothing={0.9}
+                intensity={0.18}
+              />
+            </EffectComposer>
+          )}
+        </Canvas>
+      </div>
       <Loader />
 
-      {/* DOM HUD over the canvas */}
-      <Hero docked={docked} />
-      <WeatherClock time={time} weather={weather} />
-      <Hint />
+      {/* DOM HUD over the canvas — entirely suppressed in embed mode, which
+          shows only the clean captured scene. */}
+      {!embed && (
+        <>
+          {view === 'iso' && (
+            <MapMarkers onSelectProject={onSelect} onSelectLandmark={onSelectLandmark} />
+          )}
+          <Hero docked={docked} />
+          <WeatherClock time={time} weather={weather} />
+          <Hint />
+          <BuildingTooltip project={hoveredProject} />
+        </>
+      )}
     </div>
   )
 }
 
+// Cursor-following "click to open" hint for hovered buildings. Buildings are
+// WebGL meshes, not DOM nodes, so they can't use the data-tip attribute the
+// rest of the HUD's TooltipLayer relies on — this tracks the raw pointer
+// position instead (via a ref, so mousemove never triggers a React re-render)
+// and only re-renders when the hovered building itself changes.
+function BuildingTooltip({ project }: { project: Project | null }) {
+  const chipRef = useRef<HTMLDivElement>(null)
+  const posRef = useRef({ x: 0, y: 0 })
+
+  useEffect(() => {
+    if (!canHover()) return
+    const onMove = (e: PointerEvent) => {
+      posRef.current = { x: e.clientX, y: e.clientY }
+      const el = chipRef.current
+      if (el) {
+        el.style.left = `${posRef.current.x + 18}px`
+        el.style.top = `${posRef.current.y + 22}px`
+      }
+    }
+    window.addEventListener('pointermove', onMove)
+    return () => window.removeEventListener('pointermove', onMove)
+  }, [])
+
+  if (!project || !canHover()) return null
+
+  return (
+    <div
+      ref={chipRef}
+      className="tt-chip tt-show"
+      style={{ position: 'fixed', left: posRef.current.x + 18, top: posRef.current.y + 22 }}
+      role="tooltip"
+      aria-hidden
+    >
+      {project.label} — click to open
+    </div>
+  )
+}
+
+// Persistent control hint — no background at all; plain white text with a soft
+// dark shadow so it stays readable over the (light or dark) scene without a
+// panel. Desktop only; on touch the first-visit coachmarks carry the gestures.
 function Hint() {
   return (
-    <div className="pointer-events-none absolute bottom-5 left-1/2 z-[15] hidden -translate-x-1/2 items-center gap-[7px] whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.18em] text-ink-soft opacity-50 sm:flex">
-      <span
-        className="h-[5px] w-[5px] rounded-full bg-ink-soft"
-        style={{ animation: 'pulseDot 1.8s ease-in-out infinite' }}
-      />
-      Drag to pan · Scroll to zoom · Right-drag to orbit · Click a building or landmark
+    <div className="pointer-events-none absolute bottom-4 left-1/2 z-[15] hidden -translate-x-1/2 sm:block">
+      <div className="flex items-center gap-[9px] whitespace-nowrap px-[15px] py-[7px]">
+        <span
+          className="h-[5px] w-[5px] rounded-full bg-white"
+          style={{ animation: 'pulseDot 1.8s ease-in-out infinite', filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.55))' }}
+        />
+        <span
+          className="font-mono text-[10px] font-semibold uppercase tracking-[0.13em] text-white"
+          style={{ textShadow: '0 1px 3px rgba(0,0,0,0.55), 0 0 10px rgba(0,0,0,0.35)' }}
+        >
+          Drag to pan · Scroll to zoom · Right-drag to orbit · Click a building
+        </span>
+      </div>
     </div>
   )
 }

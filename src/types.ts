@@ -22,6 +22,102 @@ export type RoofStyle = 'flat' | 'setback' | 'pitched'
 
 export type Ownership = 'solo' | 'lead' | 'collab' | 'support'
 
+// --- Rich case study (for the featured hero projects) ------------------------
+export interface CaseHighlight {
+  title: string
+  body: string
+}
+export interface CaseStudy {
+  role: string
+  timeline: string
+  platform: string
+  /** Short status/context badge, e.g. "Live in production" or "CES 2024". */
+  context?: string
+  /** One punchy positioning line shown as the lead paragraph. */
+  summary: string
+  problem: string
+  /** Scannable key decisions / contributions. */
+  approach: CaseHighlight[]
+  /** Outcome bullets. */
+  impact: string[]
+  /** Hero stat callout. */
+  metric?: { value: string; label: string }
+  /** Figma prototype URL — shown as an embedded iframe in the case study. */
+  figmaPrototype?: string
+  /** Design process phases shown between problem and solution. */
+  process?: Array<{ phase: string; body: string }>
+  /** Scannable What / Who / How overview block (shown under the summary). */
+  tldr?: { what: string; who: string; how: string }
+  /** Big-number stat band — scannable headline metrics. */
+  stats?: Array<{ value: string; label: string }>
+  /** Capability comparison matrix — the differentiation infographic. cells align to columns. */
+  comparison?: {
+    title?: string
+    columns: string[]
+    rows: Array<{ label: string; cells: boolean[] }>
+    caption?: string
+  }
+  /** Numbered horizontal step-flow diagram for a signature interaction. */
+  flow?: {
+    title: string
+    caption?: string
+    steps: Array<{ title: string; detail?: string }>
+  }
+  /** Labeled anatomy diagram — breaks a core surface into named panels. */
+  anatomy?: {
+    title: string
+    caption?: string
+    toggles?: string[]
+    panels: Array<{ label: string; role: string; items?: string[] }>
+  }
+  /** Before/after concept diagram — explains a reframing in two columns. */
+  beforeAfter?: {
+    title: string
+    caption?: string
+    before: { label: string; points: string[] }
+    after: { label: string; points: string[] }
+  }
+  /** Discovery & research findings — competitive audit, user research insights. */
+  research?: Array<{ label: string; body: string }>
+  /** User personas — who this product is for. */
+  users?: Array<{ role: string; description: string; needs: string }>
+  /** Closing reflection — what I learned, what was hardest, what I'd revisit. */
+  reflection?: string
+}
+
+// --- Password-gated case studies --------------------------------------------
+// The three featured case studies ship only a public teaser; the full body is
+// AES-GCM encrypted at build time and fetched/decrypted on the client after the
+// correct password is entered. The plaintext lives in a Node-only module and is
+// never bundled or prerendered — so there is no DOM/CSS trick that reveals it.
+export interface ProjectTeaser {
+  /** Lead paragraph shown publicly (also used for SEO description). */
+  summary: string
+  /** Single hero stat shown on the teaser. */
+  metric?: { value: string; label: string }
+  /** Role + scope line, e.g. "Solo Product Designer · UX Research → IA → UI". */
+  role?: string
+  /** 3–4 crisp, public-safe outcome bullets — the teaser's real selling. */
+  highlights?: string[]
+  /** What the full (gated) write-up covers, shown as chips so a reader knows
+   *  exactly what they'd unlock. */
+  covers?: string[]
+}
+
+/** The decrypted payload shape (type only — the data lives Node-side). */
+export type LockedPayload =
+  | { kind: 'rich'; data: import('./data/caseStudyTypes').RichCaseStudy }
+  | { kind: 'standard'; data: CaseStudy }
+
+/** On-the-wire encrypted blob served at /locked/<id>.json. */
+export interface EncryptedBlob {
+  v: 1
+  kdf: { salt: string; iterations: number; hash: 'SHA-256' }
+  iv: string
+  /** base64(ciphertext || 16-byte GCM auth tag). */
+  data: string
+}
+
 export interface Project {
   id: string
   gx: number
@@ -32,15 +128,40 @@ export interface Project {
   glyph: GlyphName
   desc: string
   tags: string[]
+  /** Featured case studies are password-gated: only `teaser` ships publicly. */
+  locked?: boolean
+  teaser?: ProjectTeaser
   /** Optional 3D overrides; derived from the graph position when omitted. */
   height?: number
   footprint?: number
   roofStyle?: RoofStyle
   /** Path to a logo image; when set it replaces the wordmark on the building. */
   logo?: string
+  /** Explicit 1200×630 social card. Falls back to the first project image. */
+  ogImage?: string
   /** Map-layer metrics. effort 1 (light) .. 5 (heavy); ownership of the work. */
   effort?: number
   ownership?: Ownership
+  /** Hero projects get a floating star marker + a full case-study overlay. */
+  featured?: boolean
+  caseStudy?: CaseStudy
+  /**
+   * A full rich case study shipped PUBLICLY (no password). `locked` projects
+   * keep their rich body encrypted in lockedCaseStudies.ts instead; this field
+   * is for studies that are free to read, so the same rich renderer is used
+   * without a gate.
+   */
+  richCaseStudy?: import('./data/caseStudyTypes').RichCaseStudy
+  /** One or more named carousels shown in the project overlay. Each group gets its own heading + carousel. */
+  imageGroups?: Array<{
+    title: string
+    /** CSS aspect-ratio for the carousel viewport (e.g. '16 / 9'). Fixes the box
+        height so slides of differing dimensions don't jump. Defaults to '16 / 9'. */
+    aspect?: string
+    /** 'carousel' (default) or 'stack' — renders images one below the other. */
+    layout?: 'carousel' | 'stack'
+    images: Array<{ src: string; caption?: string }>
+  }>
 }
 
 export interface FillerTile {
@@ -81,7 +202,7 @@ export interface Appearance {
   layer: MapLayer | null
 }
 
-export type ViewMode = '3d' | 'iso'
+export type ViewMode = '3d' | 'iso' | 'skyline'
 
 export interface LayerState {
   showLabels: boolean

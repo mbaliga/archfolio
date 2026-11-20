@@ -1,15 +1,20 @@
+/**
+ * DayNight — drives the Hyderabad local-time sky cycle while keeping coastal
+ * fog distances large enough for the sea to dissolve into the horizon.
+ * skyProfile() provides the 24h colour/lighting keyframes; fog near/far are
+ * overridden here to the coastal scale regardless of weather.
+ */
+
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { AmbientLight, Color, DirectionalLight, Fog, HemisphereLight } from 'three'
 import { easing } from 'maath'
-import { getHyderabadTime, skyProfile } from '../lib/sky'
-import { SKY } from './lib/cityTheme'
 import { Rain } from './Rain'
+import { getHyderabadTime, nightFactor } from '../lib/sky'
+import { skyProfile } from '../lib/skyProfile'
 import type { Weather } from '../lib/weather'
 import type { ViewMode } from '../types'
 
-// Owns the scene lights, background, and fog, easing them toward the time-of-day
-// + weather profile every frame. No sun mesh — just the ambient/key light shift.
 export function DayNight({ weather, view }: { weather: Weather | null; view: ViewMode }) {
   const scene = useThree((s) => s.scene)
   const hemi = useRef<HemisphereLight>(null)
@@ -17,18 +22,36 @@ export function DayNight({ weather, view }: { weather: Weather | null; view: Vie
   const dir = useRef<DirectionalLight>(null)
 
   useEffect(() => {
-    if (!(scene.background instanceof Color)) scene.background = new Color(SKY)
-    if (!scene.fog) scene.fog = new Fog(SKY, 200, 460)
-  }, [scene])
+    const p = skyProfile(getHyderabadTime().frac, weather)
+    if (!(scene.background instanceof Color)) scene.background = new Color().copy(p.background)
+    if (!scene.fog) scene.fog = new Fog(p.fog.getHex(), 380, 1500)
+  }, [scene, weather])
 
   useFrame((_, dt) => {
     const p = skyProfile(getHyderabadTime().frac, weather)
+    const nf = nightFactor() // 0 = full day, 1 = full night
+
+    // Clear Amalfi daytime: push fog far out so buildings read crisp and vivid.
+    // Rain/storm: override dramatically — city dissolves into grey mist.
+    const baseFogNear = view === 'iso' ? 480 : view === 'skyline' ? 300 : 360
+    const baseFogFar  = view === 'skyline' ? 1400 : 1500
+    let fogNear: number
+    let fogFar:  number
+    if (weather?.rain) {
+      // Rain: bring atmosphere in gently without killing city readability
+      fogNear = weather.condition === 'storm' ? 220 : 320
+      fogFar  = weather.condition === 'storm' ? 700 : 900
+    } else {
+      fogNear = baseFogNear + (1 - nf) * 700   // up to 1060 in clear day
+      fogFar  = baseFogFar  + (1 - nf) * 2000  // up to 3500 in clear day
+    }
+
     if (scene.background instanceof Color) easing.dampC(scene.background, p.background, 0.6, dt)
     const fog = scene.fog
     if (fog instanceof Fog) {
       easing.dampC(fog.color, p.fog, 0.6, dt)
-      easing.damp(fog, 'near', p.fogNear, 0.6, dt)
-      easing.damp(fog, 'far', p.fogFar, 0.6, dt)
+      easing.damp(fog, 'near', fogNear, 0.6, dt)
+      easing.damp(fog, 'far', fogFar, 0.6, dt)
     }
     if (hemi.current) {
       easing.dampC(hemi.current.color, p.hemiSky, 0.6, dt)
@@ -44,21 +67,23 @@ export function DayNight({ weather, view }: { weather: Weather | null; view: Vie
 
   return (
     <>
-      <hemisphereLight ref={hemi} args={[SKY, '#cdbfa6', 0.85]} />
-      <ambientLight ref={amb} intensity={0.35} />
+      <hemisphereLight ref={hemi} args={['#2c4d7e', '#16243a', 0.6]} />
+      <ambientLight ref={amb} intensity={0.32} />
       <directionalLight
         ref={dir}
-        position={[70, 110, 50]}
-        intensity={1.15}
+        position={[105, 150, 75]}
+        intensity={0.6}
+        color="#ffd9a0"
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={10}
         shadow-camera-far={360}
-        shadow-camera-left={-110}
-        shadow-camera-right={110}
-        shadow-camera-top={110}
-        shadow-camera-bottom={-110}
+        shadow-camera-left={-130}
+        shadow-camera-right={130}
+        shadow-camera-top={130}
+        shadow-camera-bottom={-130}
         shadow-bias={-0.0004}
+        shadow-normalBias={0.12}
       />
       {weather?.rain && view === '3d' && <Rain />}
     </>

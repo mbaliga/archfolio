@@ -8,20 +8,43 @@ import { Props } from './Props'
 import { CityFill } from './CityFill'
 import { Building } from './Building'
 import { Landmark } from './Landmark'
-import { StreetSigns, AvenueLabels, GatewayLabels } from './StreetSigns'
-import { Mountains } from './Mountains'
-import { Waterfall } from './Waterfall'
+import { StreetSigns, GatewayLabels } from './StreetSigns'
+import { StreetFurniture } from './StreetFurniture'
+import { StreetDecor } from './StreetDecor'
+import { Pond } from './Pond'
 import { Birds } from './Birds'
 import { ClockTower } from './ClockTower'
-import { BUILDINGS, LANDMARK_DEFS, ISO_FLATTEN } from './lib/cityModel'
+import { Lighthouse } from './Lighthouse'
+import { FutureBridge } from './FutureBridge'
+import { FutureIsland } from './FutureIsland'
+import { Billboards } from './Billboards'
+import { CityLife } from './CityLife'
+import { CoastEnvironment } from './CoastEnvironment'
+import { Outskirts } from './Outskirts'
+import { Marina } from './Marina'
+import { Beach } from './Beach'
+import { Campfires } from './Campfires'
+import { SkyBeams } from './SkyBeams'
+import { Constellations } from './Constellations'
+import { Aurora } from './Aurora'
+import { Rainbow } from './Rainbow'
+import { FerrisWheel, Tram, ShootingStars } from './Funfair'
+import { BUILDINGS, LANDMARK_DEFS, SKYLINE_POSITIONS } from './lib/cityModel'
+import { PROJECTS } from '../data/projects'
+import type { Weather } from '../lib/weather'
 import type { Appearance, LayerState, ViewMode, Project, Landmark as LandmarkData } from '../types'
 
 interface CityWorldProps {
   appearance: Appearance
   layers: LayerState
   view: ViewMode
+  weather: Weather | null
   onSelect: (project: Project, rect: DOMRect) => void
   onSelectLandmark: (landmark: LandmarkData, rect: DOMRect) => void
+  /** Fires with the hovered building's project, or null on hover-out — drives
+      the cursor-following "click to open" tooltip (buildings are WebGL, not
+      DOM, so they can't use the data-tip attribute the rest of the HUD uses). */
+  onHoverProject?: (project: Project | null) => void
 }
 
 // Project a building's world bounding box to a screen-space rect, so the DOM
@@ -60,15 +83,33 @@ function projectRect(object: Object3D, camera: Camera, canvas: HTMLCanvasElement
   return new DOMRect(minX, minY, Math.max(8, maxX - minX), Math.max(8, maxY - minY))
 }
 
-export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark }: CityWorldProps) {
+export function CityWorld({ appearance, layers, view, weather, onSelect, onSelectLandmark, onHoverProject }: CityWorldProps) {
   const [hovered, setHovered] = useState<string | null>(null)
   const worldRef = useRef<Group>(null)
   const camera = useThree((s) => s.camera)
   const gl = useThree((s) => s.gl)
 
-  // 2D/iso view flattens the city vertically.
+  // Buildings report their hover up for the DOM tooltip; hovering a landmark
+  // (which has no case-study "click to open" hint) clears it.
+  const handleBuildingHover = useCallback(
+    (id: string | null) => {
+      setHovered(id)
+      onHoverProject?.(id ? PROJECTS.find((p) => p.id === id) ?? null : null)
+    },
+    [onHoverProject],
+  )
+  const handleLandmarkHover = useCallback(
+    (id: string | null) => {
+      setHovered(id)
+      onHoverProject?.(null)
+    },
+    [onHoverProject],
+  )
+
+  // The city keeps its full height in every view — 2D is now a cinematic
+  // coastal-dusk townscape, not a flattened map.
   useFrame((_, dt) => {
-    if (worldRef.current) easing.damp(worldRef.current.scale, 'y', view === 'iso' ? ISO_FLATTEN : 1, 0.22, dt)
+    if (worldRef.current) easing.damp(worldRef.current.scale, 'y', 1, 0.22, dt)
   })
 
   const handleSelect = useCallback(
@@ -87,33 +128,71 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
 
   // The user toggle gates the name labels; they stay visible in 2D too, where
   // Building / Landmark counter-scale them so the flatten doesn't squash them.
-  const showLabel = layers.showLabels
+  // In the 2D map the DOM markers replace the tiny 3D name plates entirely.
+  const showLabel = layers.showLabels && view !== 'iso'
 
   return (
     <>
       <group ref={worldRef}>
         <Ground />
+        <CoastEnvironment />
+        <Constellations />
+        <Aurora view={view} />
         <Roads />
         <Props />
-        <Mountains />
+        {/* The countryside belt + waterfront keep the island honest from every
+            angle except the skyline lineup, which wants a clean stage. */}
+        {layers.showScenery && view !== 'skyline' && <Outskirts />}
+        {view !== 'skyline' && <Marina />}
+        {view !== 'skyline' && <Beach />}
+        <StreetFurniture />
+        <StreetDecor />
+        <Campfires />
+        {/* Searchlight beams read best from the 3D and street angles; in the
+            steep bird's-eye they'd point straight at the camera. */}
+        {view !== 'iso' && <SkyBeams />}
         {layers.showScenery && <CityFill />}
         {view === '3d' && <StreetSigns />}
-        {view === '3d' && <Waterfall />}
-        {view === '3d' && <Birds />}
-        {view === '3d' && <ClockTower />}
-        {view === 'iso' && <AvenueLabels />}
-        {BUILDINGS.map((def) => (
-        <Building
-          key={def.project.id}
-          def={def}
-          hovered={hovered === def.project.id}
-          appearance={appearance}
-          showLabel={showLabel}
-          view={view}
-          onHover={setHovered}
-          onSelect={handleSelect}
-        />
-      ))}
+        {/* Lively layers also enrich the coastal 2D dusk view; skyline keeps a
+            clean rearranged row, so they stay out of it. */}
+        {view !== 'skyline' && <Pond />}
+        {view !== 'skyline' && <Birds />}
+        {view !== 'skyline' && <ClockTower />}
+        {view !== 'skyline' && <FutureBridge />}
+        {view !== 'skyline' && <FutureIsland />}
+        {view !== 'skyline' && (() => {
+          const studioProject = PROJECTS.find(p => p.id === 'arch')
+          return studioProject ? (
+            <Lighthouse
+              project={studioProject}
+              hovered={hovered === studioProject.id}
+              showLabel={showLabel}
+              onHover={handleBuildingHover}
+              onSelect={handleSelect}
+            />
+          ) : null
+        })()}
+        {view !== 'skyline' && <Rainbow weather={weather} />}
+        {/* Funfair life: the beach ferris wheel, the ring-road tram, and
+            night meteors. Skyline keeps its clean stage. */}
+        {view !== 'skyline' && layers.showScenery && <FerrisWheel />}
+        {view !== 'skyline' && <Tram />}
+        {view !== 'skyline' && <ShootingStars />}
+        {view !== 'skyline' && <Billboards />}
+        {view !== 'skyline' && <CityLife />}
+        {BUILDINGS.filter(d => d.project.id !== 'arch').map((def) => (
+          <Building
+            key={def.project.id}
+            def={def}
+            hovered={hovered === def.project.id}
+            appearance={appearance}
+            showLabel={showLabel}
+            view={view}
+            skylineX={SKYLINE_POSITIONS.get(def.project.id) ?? 0}
+            onHover={handleBuildingHover}
+            onSelect={handleSelect}
+          />
+        ))}
       {layers.showLandmarks &&
         LANDMARK_DEFS.map((def) => (
           <Landmark
@@ -121,8 +200,7 @@ export function CityWorld({ appearance, layers, view, onSelect, onSelectLandmark
             def={def}
             hovered={hovered === def.landmark.id}
             showLabel={showLabel}
-            view={view}
-            onHover={setHovered}
+            onHover={handleLandmarkHover}
             onSelect={handleSelectLandmark}
           />
         ))}

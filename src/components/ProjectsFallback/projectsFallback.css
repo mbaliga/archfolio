@@ -1,0 +1,260 @@
+/* Scoped port of index-fallback.html's stylesheet — every selector prefixed
+   with .pf so it can never leak into (or be leaked into by) the rest of the
+   app's Tailwind/HUD styles. Same interactions as the source file: floating
+   featured-card parallax, sticky "stacking" feature cards, a rotating hero
+   focus word, and a marquee strip. */
+.pf {
+  --pf-bg: #ffffff;
+  --pf-bg-2: #f5f5f7;
+  --pf-ink: #111113;
+  --pf-ink-2: #6e6e73;
+  --pf-line: #e4e4e8;
+  --pf-accent: #5b4bde;
+  --pf-accent-soft: #eef0ff;
+  --pf-radius: 22px;
+  --pf-font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  background: var(--pf-bg);
+  color: var(--pf-ink);
+  font-family: var(--pf-font);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* No overflow-x here on purpose: `overflow-x: hidden` makes .pf its own
+     scroll container, which breaks `position: sticky` on the stacking cards
+     (they'd have no scroll room to stick within). The App wrapper that hosts
+     this page is already `overflow-x-hidden`, so horizontal overflow is
+     clipped there and sticky can anchor to the real scroll container. */
+  min-height: 100%;
+}
+.pf * { box-sizing: border-box; }
+.pf a { color: inherit; text-decoration: none; }
+.pf img { display: block; max-width: 100%; }
+.pf :focus-visible { outline: 2px solid var(--pf-accent); outline-offset: 3px; border-radius: 4px; }
+.pf .pf-skip { position: absolute; left: -999px; top: 0; background: var(--pf-ink); color: #fff; padding: 10px 16px; z-index: 99; }
+.pf .pf-skip:focus { left: 0; }
+.pf .pf-wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+.pf .pf-btn { display: inline-block; border-radius: 980px; padding: 13px 26px; font-size: 16px; font-weight: 500; transition: 0.2s; cursor: pointer; border: none; font-family: inherit; }
+.pf .pf-btn--solid { background: var(--pf-ink); color: #fff; }
+.pf .pf-btn--solid:hover { background: #000; }
+.pf .pf-btn--ghost { border: 1px solid var(--pf-line); color: var(--pf-ink); background: transparent; }
+.pf .pf-btn--ghost:hover { border-color: var(--pf-accent); color: var(--pf-accent); }
+.pf .pf-btn--wa { background: #25d366; color: #06331a; display: inline-flex; align-items: center; gap: 8px; }
+.pf .pf-btn--wa:hover { background: #1fbe5a; }
+.pf .pf-btn__ico { width: 18px; height: 18px; }
+
+/* nav */
+.pf .pf-nav { position: sticky; top: 0; z-index: 40; background: rgba(255,255,255,0.75); backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%); border-bottom: 1px solid rgba(0,0,0,0.07); }
+.pf .pf-nav__in { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.pf .pf-nav__logo { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; background: none; border: none; cursor: pointer; font-family: inherit; color: inherit; }
+.pf .pf-nav__links { display: flex; gap: 26px; font-size: 15px; color: var(--pf-ink-2); }
+.pf .pf-nav__links button { background: none; border: none; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+.pf .pf-nav__links a:hover, .pf .pf-nav__links button:hover { color: var(--pf-ink); }
+.pf .pf-nav__cta { font-size: 14px; background: var(--pf-ink); color: #fff; border-radius: 980px; padding: 8px 18px; font-weight: 500; }
+@media (max-width: 680px) { .pf .pf-nav__links { display: none; } }
+
+/* hero */
+.pf .pf-hero { padding: clamp(70px,12vw,138px) 0 clamp(40px,7vw,76px); }
+.pf .pf-hero__hello { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-size: 16px; color: var(--pf-ink-2); margin-bottom: 26px; }
+.pf .pf-badge { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--pf-line); background: var(--pf-bg-2); border-radius: 980px; padding: 7px 15px; font-size: 13.5px; color: var(--pf-ink); }
+.pf .pf-badge i { width: 8px; height: 8px; border-radius: 50%; background: #1a7f37; font-style: normal; }
+.pf .pf-hero h1 { font-size: clamp(38px,8.2vw,98px); font-weight: 600; line-height: 1.03; letter-spacing: -0.035em; max-width: 15ch; }
+.pf .pf-hero h1 .pf-rot { display: inline-block; position: relative; color: var(--pf-accent); min-width: 1ch; white-space: nowrap; }
+.pf .pf-hero h1 .pf-rot span { display: inline-block; }
+.pf .pf-rot--switching span { animation: pf-wordOut 0.28s ease forwards; }
+.pf .pf-rot--entering span { animation: pf-wordIn 0.34s cubic-bezier(0.2,0.7,0.3,1) forwards; }
+@keyframes pf-wordOut { to { opacity: 0; transform: translateY(-14px); } }
+@keyframes pf-wordIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.pf .pf-hero__cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+.pf .pf-hero__meta { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 30px; font-size: 15px; color: var(--pf-ink-2); }
+.pf .pf-hero__meta a { color: var(--pf-accent); }
+.pf .pf-hero__meta b { color: var(--pf-ink); font-weight: 600; }
+
+/* section labels */
+.pf .pf-slabel { display: flex; align-items: center; gap: 11px; font-size: clamp(16px,1.9vw,20px); font-weight: 600; color: var(--pf-ink-2); letter-spacing: -0.01em; margin-bottom: 34px; }
+.pf .pf-slabel::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--pf-accent); flex: none; }
+.pf .pf-sec { padding: clamp(44px,7vw,88px) 0; }
+
+/* floating featured cards */
+.pf .pf-float { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px,3.5vw,44px); }
+.pf .pf-fcard { border-radius: var(--pf-radius); overflow: hidden; background: var(--pf-bg-2); border: 1px solid var(--pf-line); will-change: transform; transition: border-color 0.3s, box-shadow 0.3s; display: block; }
+.pf .pf-fcard:hover { border-color: #d3d3da; box-shadow: 0 24px 50px rgba(0,0,0,0.09); }
+.pf .pf-fcard--wide { grid-column: 1 / -1; max-width: 82%; }
+.pf .pf-fcard--right { justify-self: end; }
+.pf .pf-fcard--up { margin-top: clamp(-90px,-6vw,-30px); }
+.pf .pf-fcard__media { position: relative; aspect-ratio: 16 / 9.4; background: radial-gradient(120% 120% at 20% 0%, rgba(91,75,222,0.16), transparent 55%), linear-gradient(150deg,#eef0ff,#f6f6f9); }
+.pf .pf-fcard__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.pf .pf-fcard__sig { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 12px 16px; text-align: right; }
+.pf .pf-fcard__sig .pf-big { font-size: clamp(26px,3.4vw,40px); font-weight: 600; letter-spacing: -0.03em; line-height: 1; color: var(--pf-accent); }
+.pf .pf-fcard__sig .pf-sm { font-size: 12px; color: var(--pf-ink-2); margin-top: 5px; max-width: 21ch; }
+.pf .pf-fcard__sig--line .pf-sm { margin-top: 0; color: var(--pf-ink); font-weight: 500; font-size: 13px; }
+.pf .pf-fcard__body { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 20px 22px 22px; }
+.pf .pf-fcard__meta { font-size: 13.5px; color: var(--pf-ink-2); }
+.pf .pf-fcard__meta b { display: block; font-size: clamp(22px,2.8vw,30px); font-weight: 600; color: var(--pf-ink); letter-spacing: -0.02em; margin-top: 6px; line-height: 1.1; }
+.pf .pf-fcard__meta i { font-style: normal; }
+.pf .pf-fcard__go { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--pf-line); display: grid; place-items: center; font-size: 18px; color: var(--pf-ink-2); transition: 0.25s; }
+.pf .pf-fcard:hover .pf-fcard__go { background: var(--pf-ink); color: #fff; border-color: var(--pf-ink); transform: rotate(-45deg); }
+@media (max-width: 760px) {
+  .pf .pf-float { grid-template-columns: 1fr; }
+  .pf .pf-fcard--wide { max-width: 100%; }
+  .pf .pf-fcard--up { margin-top: 0; }
+}
+
+/* stacking feature cards */
+.pf .pf-stack { display: flex; flex-direction: column; gap: 24px; }
+.pf .pf-stack__card { position: sticky; top: calc(84px + var(--i,0) * 16px); background: var(--pf-bg-2); border: 1px solid var(--pf-line); border-radius: var(--pf-radius); padding: clamp(28px,4.2vw,54px); min-height: clamp(280px,42vh,360px); display: grid; grid-template-columns: 1fr auto; gap: 20px; align-content: space-between; will-change: transform, opacity; transform-origin: center top; }
+.pf .pf-stack__num { grid-column: 2; grid-row: 1; font-size: 14px; font-weight: 600; color: var(--pf-accent); letter-spacing: 0.02em; }
+.pf .pf-stack__k { grid-column: 1; grid-row: 1; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pf-ink-2); }
+.pf .pf-stack__b { grid-column: 1 / -1; grid-row: 2; max-width: 40ch; }
+.pf .pf-stack__b h3 { font-size: clamp(24px,3.4vw,38px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
+.pf .pf-stack__b p { font-size: clamp(16px,1.9vw,19px); color: var(--pf-ink-2); line-height: 1.5; margin-top: 14px; }
+.pf .pf-stack__b p strong { color: var(--pf-ink); font-weight: 600; }
+/* Keep the two-column header (kicker | number) on mobile too — collapsing to a
+   single column put the number and the kicker in the same cell, overlapping. */
+@media (max-width: 600px) { .pf .pf-stack__card { min-height: auto; } .pf .pf-stack__num { justify-self: end; } }
+
+/* more work rows */
+.pf .pf-rows { border-top: 1px solid var(--pf-line); }
+.pf .pf-row { display: grid; grid-template-columns: 110px 1fr auto; gap: 18px; align-items: baseline; padding: 22px 6px; border-bottom: 1px solid var(--pf-line); color: var(--pf-ink-2); font-size: 15px; transition: background 0.2s, padding-left 0.25s; }
+.pf .pf-row b { font-size: clamp(19px,2.4vw,26px); font-weight: 600; color: var(--pf-ink); letter-spacing: -0.02em; }
+.pf .pf-row .pf-cat { justify-self: end; font-size: 13.5px; }
+.pf .pf-row:hover { background: rgba(0,0,0,0.02); padding-left: 14px; }
+@media (max-width: 600px) { .pf .pf-row { grid-template-columns: 64px 1fr; } .pf .pf-row .pf-cat { display: none; } }
+.pf .pf-rows__foot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-top: 26px; font-size: 15px; color: var(--pf-ink-2); }
+.pf .pf-rows__foot button { background: none; border: none; font: inherit; color: var(--pf-accent); cursor: pointer; padding: 0; }
+
+/* about */
+.pf .pf-about { display: grid; grid-template-columns: 1.5fr 1fr; gap: clamp(26px,5vw,70px); align-items: center; }
+.pf .pf-about h2 { font-size: clamp(24px,3.6vw,40px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.25; }
+.pf .pf-about h2 em { font-style: normal; color: var(--pf-accent); }
+.pf .pf-about__photo { aspect-ratio: 3 / 3.6; border-radius: var(--pf-radius); overflow: hidden; background: radial-gradient(110% 110% at 80% 10%, rgba(91,75,222,0.16), transparent 60%), linear-gradient(160deg,#eef0ff,#f6f6f9); border: 1px solid var(--pf-line); position: relative; }
+.pf .pf-about__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pf .pf-about__photo figcaption { position: absolute; bottom: 14px; left: 14px; font-size: 12.5px; color: var(--pf-ink-2); }
+.pf .pf-about a.pf-more { display: inline-block; margin-top: 26px; color: var(--pf-accent); font-size: 16px; }
+@media (max-width: 760px) { .pf .pf-about { grid-template-columns: 1fr; } }
+
+/* marquee + contact */
+.pf .pf-marq { overflow: hidden; border-top: 1px solid var(--pf-line); border-bottom: 1px solid var(--pf-line); padding: 26px 0; white-space: nowrap; }
+.pf .pf-marq__track { display: inline-flex; gap: 56px; animation: pf-marq 26s linear infinite; will-change: transform; }
+.pf .pf-marq span { font-size: clamp(26px,4.6vw,52px); font-weight: 600; letter-spacing: -0.02em; color: var(--pf-ink-2); }
+.pf .pf-marq span em { font-style: normal; color: var(--pf-ink); }
+.pf .pf-marq span i { font-style: normal; color: var(--pf-accent); }
+@keyframes pf-marq { to { transform: translateX(-50%); } }
+.pf .pf-say { padding: clamp(50px,8vw,100px) 0; }
+.pf .pf-say h2 { font-size: clamp(30px,5.6vw,62px); font-weight: 600; letter-spacing: -0.03em; line-height: 1.08; max-width: 22ch; }
+.pf .pf-say .pf-btns { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 36px; }
+
+/* footer */
+.pf footer { border-top: 1px solid var(--pf-line); padding: 40px 0 70px; font-size: 14.5px; color: var(--pf-ink-2); }
+.pf .pf-foot { display: flex; flex-wrap: wrap; gap: 16px 30px; justify-content: space-between; }
+.pf .pf-foot a:hover, .pf .pf-foot button:hover { color: var(--pf-ink); }
+.pf .pf-foot__links { display: flex; gap: 24px; flex-wrap: wrap; }
+.pf .pf-foot__links button { background: none; border: none; font: inherit; color: inherit; cursor: pointer; padding: 0; }
+
+/* reveal */
+.pf .pf-rv { opacity: 0; transform: translateY(26px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2,0.7,0.3,1); }
+.pf .pf-rv.pf-in { opacity: 1; transform: none; }
+
+/* city preview card — the prominent, appealing entry to the 3D city */
+.pf .pf-city { margin-top: clamp(34px, 5vw, 52px); }
+.pf .pf-citycard {
+  position: relative; display: block; width: 100%; padding: 0; border: 1px solid var(--pf-line);
+  border-radius: var(--pf-radius); overflow: hidden; cursor: pointer; background: #0b1d33;
+  aspect-ratio: 1200 / 460; font-family: inherit; color: #fff; text-align: left;
+  box-shadow: 0 18px 50px rgba(11,29,51,0.16); transition: box-shadow .3s, transform .3s;
+}
+.pf .pf-citycard:hover { box-shadow: 0 26px 66px rgba(11,29,51,0.26); transform: translateY(-2px); }
+.pf .pf-citycard img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 58% 52%; transition: transform .7s cubic-bezier(.2,.7,.3,1); }
+.pf .pf-citycard:hover img { transform: scale(1.035); }
+.pf .pf-citycard__scrim { position: absolute; inset: 0; background:
+  linear-gradient(90deg, rgba(11,29,51,.72) 0%, rgba(11,29,51,.32) 42%, rgba(11,29,51,0) 70%),
+  linear-gradient(0deg, rgba(11,29,51,.55) 0%, rgba(11,29,51,0) 46%); }
+.pf .pf-citycard__body { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 12px; padding: clamp(20px,3.4vw,40px); }
+.pf .pf-citycard__eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: rgba(255,255,255,.82); }
+.pf .pf-citycard__eyebrow i { width: 7px; height: 7px; border-radius: 50%; background: #7bdcb5; font-style: normal; box-shadow: 0 0 0 4px rgba(123,220,181,.25); }
+.pf .pf-citycard h3 { font-size: clamp(22px,3.2vw,36px); font-weight: 600; letter-spacing: -.02em; line-height: 1.1; max-width: 18ch; color: #fff; }
+.pf .pf-citycard p { font-size: clamp(13.5px,1.6vw,16px); color: rgba(255,255,255,.8); max-width: 46ch; line-height: 1.5; }
+.pf .pf-citycard__go { display: inline-flex; align-items: center; gap: 10px; margin-top: 6px; align-self: flex-start;
+  background: #fff; color: var(--pf-ink); font-size: 15px; font-weight: 600; border-radius: 980px; padding: 12px 22px; transition: transform .2s, box-shadow .2s; }
+.pf .pf-citycard:hover .pf-citycard__go { transform: translateX(3px); box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+.pf .pf-citycard__go svg { width: 15px; height: 15px; }
+@media (max-width: 600px) { .pf .pf-citycard { aspect-ratio: 4 / 5; } }
+
+/* trail illustration band — outdoor-theme continuity with the case studies */
+.pf .pf-trailband { line-height: 0; }
+.pf .pf-trailband svg { width: 100%; height: clamp(96px, 13vw, 190px); display: block; }
+
+/* "Selected work" — cards arranged cleanly over a trail-landscape backdrop */
+.pf .pf-work { position: relative; overflow: hidden; padding-bottom: clamp(120px, 14vw, 220px); }
+.pf .pf-trailscene { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.pf .pf-trailscene svg { width: 100%; height: 100%; display: block; }
+.pf .pf-work > .pf-wrap { position: relative; z-index: 1; }
+.pf .pf-trail-lead { margin: -18px 0 clamp(28px, 4vw, 44px); font-size: clamp(15px, 1.9vw, 18px); color: var(--pf-ink-2); }
+
+/* ---- the trail: three cards in a row over the landscape, a winding path
+       drawing left→right beneath them with a numbered marker per card ---- */
+.pf .pf-trailrow { position: relative; }
+/* stretch so all three cards share the tallest card's height (identical) */
+.pf .pf-trailrow__cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px, 2.4vw, 30px); align-items: stretch; }
+
+/* cards lift off the landscape and rise in, staggered — and are laid out as
+   equal-height flex columns: fixed-aspect media on top, body fills the rest so
+   the title/arrow sit at a consistent bottom across all three. */
+.pf .pf-stop { min-width: 0; opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.3, 1); transition-delay: calc(var(--i) * 0.12s); }
+.pf .pf-trailrow.pf-in .pf-stop { opacity: 1; transform: none; }
+.pf .pf-work .pf-fcard { width: 100%; background: #fff; box-shadow: 0 18px 44px rgba(31, 56, 42, 0.16); height: 100%; display: flex; flex-direction: column; }
+.pf .pf-work .pf-fcard:hover { border-color: #d3d3da; box-shadow: 0 28px 62px rgba(31, 56, 42, 0.26); }
+.pf .pf-work .pf-fcard__media { flex: 0 0 auto; }
+.pf .pf-work .pf-fcard__body { flex: 1 1 auto; }
+
+/* the winding trail track beneath the cards */
+.pf .pf-trailrow__track { position: relative; height: 74px; margin-top: clamp(6px, 1.4vw, 16px); }
+.pf .pf-trailrow__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pf .pf-trailrow__base { fill: none; stroke: #cbb488; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 2 15; opacity: 0.85; }
+.pf .pf-trailrow__draw { fill: none; stroke: #5f9463; stroke-width: 5; stroke-linecap: round; }
+.pf .pf-stop__marker {
+  position: absolute; top: 50%; transform: translate(-50%, -50%) scale(0.5); z-index: 2;
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  background: #fff; border: 3px solid #cbb488; color: #9a9488;
+  font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  box-shadow: 0 6px 16px rgba(31, 56, 42, 0.2); opacity: 0;
+  transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.2, 1.5, 0.4, 1), border-color 0.3s, color 0.3s;
+}
+.pf .pf-trailrow.pf-in .pf-stop__marker { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.pf .pf-stop__marker.on { border-color: #5f9463; color: #35604a; }
+
+/* the finish flag → into the city */
+.pf .pf-trailrow__end {
+  position: relative; z-index: 3; display: flex; align-items: center; gap: 9px;
+  width: fit-content; margin: clamp(18px, 3vw, 34px) auto 0; cursor: pointer; font: inherit;
+  font-size: 14.5px; font-weight: 600; color: #fff; background: var(--pf-ink);
+  border: none; border-radius: 999px; padding: 13px 24px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18); transition: transform 0.2s, box-shadow 0.2s;
+}
+.pf .pf-trailrow__end:hover { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24); }
+.pf .pf-trailrow__flag { font-size: 17px; line-height: 1; }
+
+/* tablet: 3 across gets tight → keep it but shrink type via the base card rules;
+   phone: stack into a single column and simplify the trail to vertical dots */
+@media (max-width: 720px) {
+  .pf .pf-trailrow__cards { grid-template-columns: 1fr; gap: clamp(28px, 7vw, 44px); }
+  .pf .pf-trailrow__track { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf .pf-stop { opacity: 1 !important; transform: none !important; }
+  .pf .pf-stop__marker { opacity: 1 !important; transform: translate(-50%, -50%) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf * { scroll-behavior: auto; }
+  .pf .pf-rv { opacity: 1; transform: none; transition: none; }
+  .pf .pf-marq__track { animation: none; }
+  .pf .pf-fcard { transform: none !important; }
+  .pf .pf-stack__card { position: static; transform: none !important; opacity: 1 !important; }
+  .pf .pf-rot--switching span, .pf .pf-rot--entering span { animation: none; }
+  .pf .pf-citycard img { transition: none; }
+  .pf .pf-citycard:hover img { transform: none; }
+}

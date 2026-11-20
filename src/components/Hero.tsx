@@ -1,13 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useIsMobile } from '../lib/useIsMobile'
+import { useIsNight } from '../lib/useIsNight'
 import { getHyderabadTime } from '../lib/sky'
+import { WHATSAPP_URL, FEEDBACK_URL } from '../lib/contact'
 
 const LINKS = [
-  { label: 'hello@', href: 'mailto:hello@prachimittal.com', solid: true },
-  { label: 'Resume', href: '#', solid: false },
-  { label: 'LinkedIn', href: '#', solid: false },
-  { label: 'Dribbble', href: '#', solid: false },
+  { label: 'hello@', href: 'mailto:hello@mittal.design', solid: true, external: false },
+  { label: 'About', href: '/about.html', solid: false, external: true },
+  { label: 'Resume', href: '/Prachi-Mittal-Resume-2026.pdf', solid: false, external: true },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/prachi15mittal', solid: false, external: true },
+  { label: 'Behance', href: 'https://www.behance.net/prachimittal2', solid: false, external: true },
+  // WhatsApp only appears once a number is configured (src/lib/contact.ts).
+  ...(WHATSAPP_URL ? [{ label: 'WhatsApp', href: WHATSAPP_URL, solid: false, external: true }] : []),
+  { label: 'Feedback', href: FEEDBACK_URL, solid: false, external: false },
 ]
 
 const BLURB =
@@ -17,7 +23,7 @@ const linkClass = (solid: boolean) =>
   [
     'inline-block rounded-full px-[10px] py-[5px] text-[11px] font-semibold tracking-[0.04em]',
     'transition-transform duration-[180ms] hover:-translate-y-0.5',
-    solid ? 'bg-ink text-paper' : 'border border-black/20 bg-transparent text-ink',
+    solid ? 'hud-on' : 'hud-text hud-bd-on border bg-transparent',
   ].join(' ')
 
 function greeting(): string {
@@ -35,9 +41,53 @@ function greeting(): string {
 // lockup on desktop. The docked brand is the entry point for the About menu.
 export function Hero({ docked }: { docked: boolean }) {
   const isMobile = useIsMobile()
+  const night = useIsNight()
   const [open, setOpen] = useState(false)
   const toggle = () => setOpen((o) => !o)
   const lockupTrigger = docked && !isMobile
+
+  // The coachmark tour opens/closes this menu on its "monogram" step.
+  useEffect(() => {
+    const openMenu = () => setOpen(true)
+    const closeMenu = () => setOpen(false)
+    window.addEventListener('pm:about-open', openMenu)
+    window.addEventListener('pm:about-close', closeMenu)
+    return () => {
+      window.removeEventListener('pm:about-open', openMenu)
+      window.removeEventListener('pm:about-close', closeMenu)
+    }
+  }, [])
+
+  // Peek: once the lockup docks, the About card opens by itself for a few
+  // seconds — EVERY visit, new or returning — so the profile behind the logo
+  // is always surfaced, then quietly closes. No ref guard: StrictMode
+  // double-invokes the effect and a ref set on the first pass would block the
+  // re-run after its cleanup cleared the timers.
+  // Skipped while a case study is open (checked at fire time — covers both
+  // direct /projects/:id loads and clicking a building right after boot): the
+  // card portals above the takeover, so it would float over the case study.
+  useEffect(() => {
+    if (!docked) return
+    const overlayOpen = () => /^\/projects\//.test(window.location.pathname)
+    const show = setTimeout(() => {
+      if (!overlayOpen()) setOpen(true)
+    }, 800)
+    const hide = setTimeout(() => {
+      setOpen(false)
+      // Hand the stage to the coachmark tour (first visit only) — it waits for
+      // this so the two popups never share the screen.
+      window.dispatchEvent(new Event('pm:peek-done'))
+    }, 5600)
+    return () => {
+      clearTimeout(show)
+      clearTimeout(hide)
+    }
+  }, [docked])
+
+  // Lockup sits directly on the canvas, so its colours must flip at night.
+  const wordColor = night ? 'text-paper' : 'text-ink'
+  const boxColor = night ? 'border-paper text-paper' : 'border-ink text-ink'
+  const subColor = night ? 'text-paper/75' : 'text-ink-soft'
 
   return (
     <>
@@ -56,16 +106,18 @@ export function Hero({ docked }: { docked: boolean }) {
         onClick={lockupTrigger ? toggle : undefined}
         role={lockupTrigger ? 'button' : undefined}
         aria-label={lockupTrigger ? 'About Prachi Mittal' : undefined}
+        data-tip={lockupTrigger ? 'About · Resume · Links' : undefined}
+        data-tip-pos="bottom"
       >
         <div className="flex items-center gap-4">
-          <div className="text-[clamp(30px,9vw,90px)] font-extrabold tracking-[-0.04em] leading-[0.9] text-ink">
+          <div className={`text-[clamp(30px,9vw,90px)] font-extrabold tracking-[-0.04em] leading-[0.9] transition-colors duration-700 ${wordColor}`}>
             Prachi
           </div>
-          <div className="rounded-[clamp(10px,2vw,20px)] border-2 border-ink px-[clamp(10px,2.2vw,22px)] pt-[clamp(3px,0.6vw,6px)] pb-[clamp(4px,0.8vw,8px)] text-[clamp(27px,8.2vw,82px)] font-extrabold leading-none tracking-[-0.03em] text-ink sm:border-4">
+          <div className={`rounded-[clamp(10px,2vw,20px)] border-2 px-[clamp(10px,2.2vw,22px)] pt-[clamp(3px,0.6vw,6px)] pb-[clamp(4px,0.8vw,8px)] text-[clamp(27px,8.2vw,82px)] font-extrabold leading-none tracking-[-0.03em] transition-colors duration-700 sm:border-4 ${boxColor}`}>
             Mittal
           </div>
         </div>
-        <div className="mt-[10px] text-center text-[clamp(11px,2.2vw,21px)] font-medium tracking-[0.02em] text-ink-soft">
+        <div className={`mt-[10px] text-center text-[clamp(11px,2.2vw,21px)] font-medium tracking-[0.02em] transition-colors duration-700 ${subColor}`}>
           Product Designer · Architect
         </div>
       </div>
@@ -95,15 +147,36 @@ export function Hero({ docked }: { docked: boolean }) {
         createPortal(
           <>
             <div className="fixed inset-0 z-[50]" onClick={() => setOpen(false)} />
-            <div className="fixed right-3 top-[calc(0.75rem+env(safe-area-inset-top)+44px)] z-[51] w-[min(320px,90vw)] rounded-[16px] border border-black/10 bg-white/90 p-[18px] shadow-[0_14px_44px_rgba(0,0,0,0.18)] backdrop-blur-md sm:right-4 sm:top-[64px]">
-              <div className="mb-[10px] text-[19px] font-bold tracking-[-0.01em] text-ink">{greeting()}</div>
-              <p className="mb-3 text-[13px] leading-[1.55] text-ink-soft">{BLURB}</p>
+            <div className="hud-strong fixed right-3 top-[calc(0.75rem+env(safe-area-inset-top)+44px)] z-[51] w-[min(320px,90vw)] rounded-[16px] border p-[18px] shadow-[0_14px_44px_rgba(0,0,0,0.18)] backdrop-blur-md sm:right-4 sm:top-[64px]">
+              <div className="hud-text mb-[10px] text-[19px] font-bold tracking-[-0.01em]">{greeting()}</div>
+              <p className="hud-soft mb-3 text-[13px] leading-[1.55]">{BLURB}</p>
               <div className="flex flex-wrap gap-[6px]">
-                {LINKS.map((link) => (
-                  <a key={link.label} href={link.href} className={linkClass(link.solid)}>
-                    {link.label}
-                  </a>
-                ))}
+                {LINKS.map((link) =>
+                  link.label === 'Feedback' ? (
+                    // Opens the feedback modal (mounted at App level) rather than
+                    // navigating; close the menu so the modal isn't behind it.
+                    <button
+                      key={link.label}
+                      type="button"
+                      className={linkClass(link.solid)}
+                      onClick={() => {
+                        setOpen(false)
+                        window.dispatchEvent(new Event('pm:feedback-open'))
+                      }}
+                    >
+                      {link.label}
+                    </button>
+                  ) : (
+                    <a
+                      key={link.label}
+                      href={link.href}
+                      className={linkClass(link.solid)}
+                      {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    >
+                      {link.label}
+                    </a>
+                  ),
+                )}
               </div>
             </div>
           </>,

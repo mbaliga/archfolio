@@ -1,4 +1,6 @@
 import type { Project, FillerTile } from '../types'
+import { SAMSUNG_EQ_CASE_STUDY } from './projects/samsungeq'
+import { IZAK_CASE_STUDY } from './projects/izak'
 
 // Twelve shipped surfaces + the architecture "Studio" cottage, mapped onto the
 // complexity (x) / audience (y) graph.
@@ -14,61 +16,141 @@ export const PROJECTS: Project[] = [
     label: 'Impressio',
     sub: 'AEON ROBOT · 2024',
     glyph: 'robot',
-    desc: 'End-to-end UX/UI flows for casting MIAs on the Aeon humanoid robot — desktop and tablet. Included the World AI Summit live demo and tablet casting interface.',
+    desc: 'End-to-end UX/UI flows for casting MIAs on the Aeon humanoid robot, on desktop and tablet. Included the World AI Summit live demo and tablet casting interface.',
     tags: ['Enterprise', 'Robotics', 'Tablet', 'B2B'],
   },
   {
     id: 'izak',
     effort: 5,
-    ownership: 'lead',
+    ownership: 'collab',
     gx: 6,
     gy: 4,
     scale: 1.5,
+    height: 34, // capped below the featured trio so the gold-star towers own the skyline
     label: 'iZak',
-    sub: '3D SCANNING · LiDAR',
+    sub: 'SMART HOME · SOFTWARE UPDATES',
     glyph: 'scanner',
-    desc: 'UX research and design for a LiDAR + photogrammetry 3D space scanning workflow. Deep research into spatial computing, sensor use cases, and professional scanning tools.',
-    tags: ['Enterprise', 'Spatial', 'UX Research', 'Mobile'],
+    desc: 'A TV-first smart home on NextGenTV: the screen the household shares runs the home, the phone sets it up, and software updates reach every device at once over broadcast. Product designer on the core team: research, IA, TV and mobile UI, the storyboard connecting iZak into Mo, and a LiDAR scanning feature.',
+    tags: ['Enterprise', 'Smart Home', 'Spatial', 'UX Research', 'Mobile'],
+    ogImage: '/IMAGES/izak-og.png',
+    // Public rich case study — no password (see src/data/projects/izak.ts).
+    richCaseStudy: IZAK_CASE_STUDY,
   },
   {
     id: 'paas',
-    effort: 3,
+    effort: 5,
     ownership: 'collab',
     gx: 4,
     gy: 2,
-    scale: 1.2,
-    label: 'PaaS',
-    sub: 'PROMPT LIBRARY',
+    scale: 1.5,
+    height: 52, // the tallest tower in the city — newest featured work
+    footprint: 8,
+    label: 'Ved',
+    sub: 'CMS · DITA BUILDER',
     glyph: 'servers',
-    desc: 'Prompt-as-a-service platform — library management, versioning, and evaluation surfaces. AI tooling for enterprise teams building on top of language models.',
-    tags: ['Enterprise', 'AI', 'Dashboard', 'B2B'],
+    featured: true,
+    desc: 'Designed the structured-authoring canvas and Prompt-as-a-Service conversational UX for a DITA-enabled enterprise CMS that treats prompts as first-class, governed content.',
+    tags: ['Enterprise', 'AI', 'B2B', 'Conversational UX', 'DITA', 'Design Systems'],
+    locked: true,
+    teaser: {
+      summary:
+        'A DITA CMS that makes structured authoring feel like writing a document, with AI assistance, content governance, and monetization built into one stack no competitor matches.',
+      metric: { value: 'V2', label: 'CEO-approved, in engineering build' },
+      role: 'Product Designer · lead on the authoring canvas · 2025',
+      highlights: [
+        'Designed the DITA Builder canvas: a three-panel workspace (outline tree, WYSIWYG editor, content blocks) that hides XML complexity without ever breaking structural validity.',
+        'Shaped Prompt-as-a-Service: prompts treated as first-class, governed, monetizable content rather than throwaway text.',
+        'Folded authoring, content governance, and monetization into one stack, a combination no competitor currently ships.',
+        'V2 approved by the CEO and handed to engineering for build.',
+      ],
+      covers: [
+        'The three-panel canvas',
+        'Prompt-as-a-Service UX',
+        'Content governance model',
+        'Monetization design',
+        'XML-abstraction decisions',
+      ],
+    },
+    imageGroups: [
+      {
+        title: 'The canvas',
+        layout: 'stack',
+        images: [
+          {
+            src: '/IMAGES/CMS-2025-DITA.png',
+            caption: 'DITA Builder canvas: a three-panel workspace with outline tree, WYSIWYG editor, and drag-and-drop content blocks. Author / XML / Relationship view toggling abstracts the XML without losing structural validity.',
+          },
+          {
+            src: '/IMAGES/CMS-2025-DITA2.png',
+            caption: 'Variety of Topics to choose from for enriched metadata: Concept, Task, Reference, Map, and Basic topic types paired with flexible layout options (Full Width, 2×1, 3×1, 2×2) for richly structured DITA authoring.',
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'snaplogic',
-    effort: 3,
-    ownership: 'lead',
+    effort: 4,
+    ownership: 'solo',
     gx: 2,
     gy: 2,
-    scale: 1.0,
+    scale: 1.35,
+    height: 44, // featured — second-tallest after Ved
     label: 'SnapLogic',
-    sub: 'CMS · CONNECTORS',
+    sub: 'DOCUMENTATION REVAMP',
     glyph: 'connector',
-    desc: "CMS surfaces and connector configuration UI for SnapLogic's integration platform. Weekly reviews, reworks, prototype, and full developer handoff.",
-    tags: ['Enterprise', 'Integration', 'B2B'],
+    featured: true,
+    desc: "Rebuilt SnapLogic's 700-page enterprise documentation from a Confluence tree into a dual-navigation portal (browse by product or by task intent), cutting clicks-to-target by 40%.",
+    tags: ['Enterprise', 'UX Research', 'B2B', 'Information Architecture', 'DITA', 'Responsive'],
+    locked: true,
+    teaser: {
+      summary:
+        "SnapLogic's enterprise docs lived on Confluence, never built for external product documentation. I rebuilt the experience around a dual-navigation system that lets users browse by product taxonomy or by task intent, reducing clicks-to-target by a validated 40%.",
+      metric: { value: '40%', label: 'fewer clicks to target' },
+      role: 'Solo Product Designer · UX Research → IA → UI · 2026',
+      highlights: [
+        'Rebuilt 700+ pages of enterprise documentation from a sprawling Confluence tree into a purpose-built product portal.',
+        'Designed a dual-navigation system (browse by product taxonomy or by task intent) serving one source of content with zero duplication.',
+        'Validated a 40% cut in clicks-to-target through task-based user research, not guesswork.',
+        'Delivered a responsive, DITA-backed information architecture built to scale with the product.',
+      ],
+      covers: [
+        'The research & findings',
+        'Dual-navigation IA',
+        'Before / after the Confluence tree',
+        'The responsive system',
+        'How the 40% was validated',
+      ],
+    },
+    imageGroups: [
+      {
+        title: 'The portal',
+        aspect: '1440 / 1024',
+        images: [
+          {
+            src: '/IMAGES/Snaplogic-2026-internal page.png',
+            caption: 'Internal documentation page: the dual-navigation system in context. Product taxonomy on the left, task-based browse on the right; both modes serve the same content without duplication.',
+          },
+        ],
+      },
+    ],
   },
   // Q2 — Enterprise + Simple
   {
-    id: 'lms',
-    effort: 2,
-    ownership: 'lead',
+    id: 'samsungeq',
+    effort: 4,
+    ownership: 'collab',
     gx: -2,
     gy: 2,
-    scale: 0.9,
-    label: 'SnapLogic LMS',
-    sub: 'ACADEMY · 6 COURSES',
-    glyph: 'book',
-    desc: 'Redesign of 6 internal SnapLogic Academy course pages. Ran weekly review cycles across stakeholders, built high-fidelity prototypes, and managed developer handoff.',
-    tags: ['Enterprise', 'Education', 'B2B'],
+    scale: 1.05,
+    label: 'Samsung EQ',
+    sub: 'EMOTIONAL UX · SAMSUNG PRISM',
+    glyph: 'heart',
+    desc: 'A Samsung PRISM research programme with MIT ID Pune: four months on how Gen Z bonds with their phones, ending in eight emotional-design principles and a framework that maps them against levels of consciousness.',
+    tags: ['Research', 'Emotional Design', 'Mobile', 'Framework'],
+    ogImage: '/IMAGES/samsungeq-og.png',
+    // Public rich case study — no password (see src/data/projects/samsungeq.ts).
+    richCaseStudy: SAMSUNG_EQ_CASE_STUDY,
   },
   {
     id: 'holacracy',
@@ -80,7 +162,7 @@ export const PROJECTS: Project[] = [
     label: 'Holacracy',
     sub: 'INTERNAL TOOLING',
     glyph: 'circles',
-    desc: 'Internal tooling for self-organising teams — circles, roles, tensions, and governance workflows. Where org design meets product design.',
+    desc: 'Internal tooling for self-organising teams: circles, roles, tensions, and governance workflows. Where org design meets product design.',
     tags: ['Enterprise', 'Internal', 'Governance'],
   },
   {
@@ -131,10 +213,10 @@ export const PROJECTS: Project[] = [
     gx: -2,
     gy: -2,
     scale: 1.0,
-    label: 'Mo',
+    label: 'Circlehealth',
     sub: 'MOBILE · HEALTHCARE',
     glyph: 'heart',
-    desc: 'Information architecture and UX/UI prototyping for a consumer healthcare app. Internal pilot — attended CEO and Head of Design reviews, supported QA handoff.',
+    desc: 'Information architecture and UX/UI prototyping for a consumer healthcare app. Internal pilot: attended CEO and Head of Design reviews, supported QA handoff.',
     tags: ['Consumer', 'Mobile', 'Healthcare'],
   },
   {
@@ -152,16 +234,72 @@ export const PROJECTS: Project[] = [
   },
   {
     id: 'revee',
-    effort: 3,
-    ownership: 'solo',
-    gx: -2,
-    gy: -4,
-    scale: 0.95,
-    label: 'Revee',
-    sub: 'FLOWS · QA',
-    glyph: 'sprout',
-    desc: "User flow mapping, prototyping, QA handoff, and developer collaboration for Revee's internal pilot launch. First project from concept to shipped.",
-    tags: ['Consumer', 'UX', 'Mobile'],
+    effort: 5,
+    ownership: 'lead',
+    gx: 4,
+    gy: -2,
+    scale: 1.4,
+    height: 40, // featured — towers over the consumer side
+    label: 'Revee & Mo',
+    sub: 'TV SUPER APPS · CES 2024',
+    glyph: 'tv',
+    featured: true,
+    desc: 'End-to-end design of two smart-TV apps in a 12-app suite: Mo, a community home screen, and Revee, adaptive streaming with non-interruptive advertising. Showcased at CES 2024.',
+    tags: ['Consumer', 'TV', 'Information Architecture', 'Lean-Back UX', 'Smart TV'],
+    locked: true,
+    teaser: {
+      summary:
+        'Two apps that reclaim the TV home screen for local communities and replace interruptive advertising with contextual companion experiences, part of a 12-app MIAs suite shown at CES 2024 and handed off for partnership.',
+      metric: { value: 'CES 2024', label: 'showcased · Las Vegas' },
+      role: 'Lead Designer · end-to-end · 2 of a 12-app suite · 2024',
+      highlights: [
+        'Designed two smart-TV apps end to end: Mo, a community-first home screen, and Revee, adaptive streaming.',
+        'Replaced interruptive advertising with contextual, non-interruptive companion experiences that respect lean-back viewing.',
+        'Built for the ten-foot TV experience across a coherent 12-app MIAs system.',
+        'Showcased at CES 2024 in Las Vegas and handed off for partnership.',
+      ],
+      covers: [
+        'Lean-back TV patterns',
+        'The community home screen',
+        'The non-interruptive ad model',
+        'The 12-app system',
+        'The CES handoff',
+      ],
+    },
+    imageGroups: [
+      {
+        title: 'Mo',
+        aspect: '4 / 3',
+        images: [
+          {
+            src: '/IMAGES/Mo-2024-Home.png',
+            caption: 'Home screen: a personalised daily hub: community greeting, real-time local updates, and cross-app "pick up where you left off" continuity.',
+          },
+          {
+            src: '/IMAGES/Mo-2024-Map.png',
+            caption: 'Map view: location-aware discovery of nearby community events, venues, and services, navigable with the TV remote.',
+          },
+        ],
+      },
+      {
+        title: 'Revee',
+        aspect: '16 / 9',
+        images: [
+          {
+            src: '/IMAGES/Revee-2024-epg.png',
+            caption: 'EPG: the Electronic Programme Guide surfaces live, catch-up, and on-demand content in a single lean-back scroll. Focus states scale the active tile so it reads clearly from 10 feet.',
+          },
+          {
+            src: '/IMAGES/Revee-2024-Banner.png',
+            caption: 'Companion banner ad: thematically matched creative sits beside the video stream, not over it. Viewers can engage or dismiss without the playback ever pausing.',
+          },
+          {
+            src: '/IMAGES/Revee-2024-Interactive-Ad.png',
+            caption: 'Interactive ad unit: an opt-in overlay that lets brands go deeper (product details, save-to-wishlist, QR to phone) while content continues in the background.',
+          },
+        ],
+      },
+    ],
   },
   // Easter egg — Architecture
   {
@@ -176,7 +314,7 @@ export const PROJECTS: Project[] = [
     glyph: 'cottage',
     height: 8,
     roofStyle: 'pitched',
-    desc: 'Residential architectural practice — the quiet cottage at the far edge of the map. Prachi brings the same spatial thinking she applies to physical buildings to every digital surface she designs.',
+    desc: 'A residential architectural practice, the quiet cottage at the far edge of the map. I bring the same spatial thinking I apply to physical buildings to every digital surface I design.',
     tags: ['Architecture', 'Residential', 'Spatial'],
   },
 ]

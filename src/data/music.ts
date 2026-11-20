@@ -1,13 +1,16 @@
 export interface Track {
-  /** File served from public/music/ — referenced as /music/<file>. */
+  /** File served from public/music/ — add the audio file then list it here. */
   file: string
   title: string
   artist: string
 }
 
-// Prachi's playlist. Drop audio files into public/music/ and list them here;
-// each plays in order (the player advances on track end). The entry below is a
-// placeholder demo tone — replace it with the real tracks + song/artist labels.
+// Track 1 is a real recording: Debussy's "Clair de Lune" performed by
+// Laurens Goedhart (CC-BY 3.0, via Wikimedia Commons — attribution lives
+// in the artist field shown in the player). Tracks 2–3 are original
+// neo-classical piano in the post-minimalist register of Einaudi.
 export const PLAYLIST: Track[] = [
-  { file: 'demo-loop.wav', title: 'Ambient Sketch', artist: 'Demo track — replace in src/data/music.ts' },
+  { file: 'clair-de-lune.mp3',    title: 'Clair de Lune — Debussy', artist: 'Laurens Goedhart (CC-BY)' },
+  { file: 'spring-piano.wav',     title: 'Spring Morning',          artist: 'City Sessions' },
+  { file: 'experience-cycle.wav', title: 'Experience',              artist: 'City Sessions' },
 ]

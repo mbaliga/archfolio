@@ -14,10 +14,10 @@ export const LANDMARKS: Landmark[] = [
     blurb: 'Films Prachi keeps pressing on people.',
     accent: '#c96f5a',
     items: [
-      { primary: 'In the Mood for Love', secondary: 'Wong Kar-wai' },
-      { primary: 'Paprika', secondary: 'Satoshi Kon' },
-      { primary: 'Columbus', secondary: 'Kogonada — architecture as feeling' },
-      { primary: 'Perfect Days', secondary: 'Wim Wenders' },
+      { primary: 'Interstellar', secondary: 'Christopher Nolan' },
+      { primary: 'Gravity', secondary: 'Alfonso Cuarón' },
+      { primary: 'How to Train Your Dragon', secondary: 'Dean DeBlois' },
+      { primary: 'Titanic', secondary: 'James Cameron' },
     ],
   },
   {
@@ -85,9 +85,10 @@ export const LANDMARKS: Landmark[] = [
     blurb: 'On repeat lately.',
     accent: '#b16fc9',
     items: [
-      { primary: 'Deep focus', secondary: 'instrumental / ambient' },
-      { primary: 'Sunday morning jazz' },
-      { primary: 'Running playlist', secondary: 'BPM-matched' },
+      { primary: 'Con La Brisa', secondary: 'Latin / chill' },
+      { primary: 'I Wanna Be Yours', secondary: 'Arctic Monkeys' },
+      { primary: 'Indie R&B' },
+      { primary: 'Coke Studio', secondary: 'live sessions' },
     ],
   },
 ]

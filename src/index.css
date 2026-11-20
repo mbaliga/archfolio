@@ -16,10 +16,24 @@
   #root {
     height: 100%;
   }
-  /* Track the dynamic viewport so mobile browser chrome can't hide the
-     bottom HUD; `height: 100%` above stays as the fallback. */
+  /* Keyboard-visible focus ring — invisible for mouse/touch users, so the
+     visual design is untouched; essential for keyboard navigation. */
+  :focus-visible {
+    outline: 2px solid var(--hud-text, #1b1b1b);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  /* Size to the SMALL viewport (toolbar visible), not the dynamic one.
+     `100dvh` tracks Android Chrome's collapsing URL bar, so it changes value
+     continuously while that bar animates — each change resizes the WebGL
+     canvas, and reallocating the drawing buffer many times a second stalls the
+     GPU and lets the compositor present cleared (black) frames. That is the
+     mobile-Chrome flicker. `100svh` is a fixed value, so the canvas is sized
+     once and never churns, while still keeping the bottom HUD clear of the
+     toolbar (svh assumes the toolbar is showing). `height: 100%` above stays
+     as the fallback for browsers without svh. */
   #root {
-    height: 100dvh;
+    height: 100svh;
   }
   body {
     margin: 0;
@@ -29,6 +43,49 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+}
+
+/* HUD glass tokens — frosted-white by day; dark "night glass" when <body> has
+   the .night class (toggled from Hyderabad time in App). Cards reference these
+   via the .hud* utility classes below, so a single flip restyles the whole HUD. */
+:root {
+  --hud-bg: rgba(255, 255, 255, 0.86);
+  --hud-bg-strong: rgba(255, 255, 255, 0.95);
+  --hud-hover: #ffffff;
+  --hud-border: rgba(0, 0, 0, 0.1);
+  --hud-text: #1b1b1b;
+  --hud-soft: #4a463f;
+  --hud-accent-bg: #1b1b1b;
+  --hud-accent-text: #fbf7ee;
+  /* Frosted-glass chips (map Legend + control hint) — lighter than the solid
+     HUD panels so they whisper, but paired with a text halo (below) that keeps
+     the label crisp over any background. */
+  --legend-bg: rgba(255, 255, 255, 0.5);
+  --legend-border: rgba(255, 255, 255, 0.55);
+  /* Pale halo behind dark day text so it reads over dark scenery too. */
+  --legend-halo: rgba(255, 255, 255, 0.85);
+  /* Subtle same-theme surfaces INSIDE hud cards (close chips, input fields,
+     toggle tracks) — must flip with the card or they vanish at night. */
+  --hud-chip: rgba(0, 0, 0, 0.06);
+  --hud-chip-strong: rgba(0, 0, 0, 0.15);
+  --hud-field: rgba(0, 0, 0, 0.03);
+}
+body.night {
+  --hud-bg: rgba(20, 28, 43, 0.72);
+  --hud-bg-strong: rgba(20, 28, 43, 0.88);
+  --hud-hover: rgba(38, 50, 72, 0.92);
+  --hud-border: rgba(255, 255, 255, 0.14);
+  --hud-text: #f2ede1;
+  --hud-soft: rgba(242, 237, 225, 0.66);
+  --hud-accent-bg: #f2ede1;
+  --hud-accent-text: #1b1b1b;
+  --legend-bg: rgba(20, 28, 43, 0.46);
+  --legend-border: rgba(255, 255, 255, 0.18);
+  /* Dark halo behind light night text so it reads over bright scenery too. */
+  --legend-halo: rgba(6, 12, 22, 0.7);
+  --hud-chip: rgba(255, 255, 255, 0.12);
+  --hud-chip-strong: rgba(255, 255, 255, 0.24);
+  --hud-field: rgba(255, 255, 255, 0.07);
 }
 
 @layer components {
@@ -42,6 +99,115 @@
   .scene-canvas:active {
     cursor: grabbing;
   }
+
+  /* HUD glass utilities — all colour transitions ease so day↔night is smooth. */
+  .hud {
+    background-color: var(--hud-bg);
+    border-color: var(--hud-border);
+    transition: background-color 700ms, border-color 700ms, color 700ms;
+  }
+  .hud-strong {
+    background-color: var(--hud-bg-strong);
+    border-color: var(--hud-border);
+    transition: background-color 700ms, border-color 700ms, color 700ms;
+  }
+  .hud-hover:hover {
+    background-color: var(--hud-hover);
+  }
+  .hud-text {
+    color: var(--hud-text);
+    transition: color 700ms;
+  }
+  .hud-soft {
+    color: var(--hud-soft);
+    transition: color 700ms;
+  }
+  /* Solid accent chip (active pill / play button): inverts with the theme. */
+  .hud-on {
+    background-color: var(--hud-accent-bg);
+    color: var(--hud-accent-text);
+    border-color: var(--hud-accent-bg);
+    transition: background-color 700ms, border-color 700ms, color 700ms;
+  }
+  .hud-fill {
+    background-color: var(--hud-accent-bg);
+    transition: background-color 700ms;
+  }
+  .hud-fill-text {
+    color: var(--hud-accent-text);
+    transition: color 700ms;
+  }
+  .hud-bd-on {
+    border-color: var(--hud-text);
+    transition: border-color 700ms;
+  }
+  .hud-input::placeholder {
+    color: var(--hud-soft);
+  }
+  /* In-card surfaces that flip with the theme (see token comments above). */
+  .hud-chip {
+    background-color: var(--hud-chip);
+    transition: background-color 700ms;
+  }
+  .hud-chip-strong {
+    background-color: var(--hud-chip-strong);
+    transition: background-color 700ms;
+  }
+  .hud-chip-hover:hover {
+    background-color: var(--hud-chip);
+  }
+  .hud-field {
+    background-color: var(--hud-field);
+    border-color: var(--hud-border);
+    transition: background-color 700ms, border-color 700ms;
+  }
+  .hud-bd {
+    border-color: var(--hud-border);
+    transition: border-color 700ms;
+  }
+  /* Text on the frosted Legend / hint chips: full-contrast colour plus a
+     soft same-theme halo, so it stays readable over any scene behind the
+     translucent glass (accessibility over a variable 3D background). */
+  .glass-label {
+    color: var(--hud-text);
+    text-shadow:
+      0 0 3px var(--legend-halo),
+      0 1px 2px var(--legend-halo);
+    transition: color 700ms;
+  }
+  .glass-label-soft {
+    color: var(--hud-text);
+    opacity: 0.9;
+    text-shadow:
+      0 0 3px var(--legend-halo),
+      0 1px 2px var(--legend-halo);
+    transition: color 700ms;
+  }
+  /* Singleton HUD tooltip chip (see TooltipLayer). Inverted accent tokens so
+     it reads dark-on-light by day and light-on-dark at night, like hud-on. */
+  .tt-chip {
+    position: fixed;
+    z-index: 80;
+    pointer-events: none;
+    background: var(--hud-accent-bg);
+    color: var(--hud-accent-text);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: 0.01em;
+    padding: 6px 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(2px) scale(0.97);
+    transition: opacity 140ms ease, transform 140ms ease;
+  }
+  .tt-chip.tt-show {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @keyframes worldFadeIn {
@@ -50,6 +216,18 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes markerPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.75;
+  }
+  70%,
+  100% {
+    transform: translate(-50%, -50%) scale(1.55);
+    opacity: 0;
   }
 }
 
@@ -63,4 +241,100 @@
     opacity: 1;
     transform: scale(1.4);
   }
+}
+
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-rise-delay {
+  0%,
+  25% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-rise-delay-2 {
+  0%,
+  50% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes eqBar1 { from { transform: scaleY(0.3); } to { transform: scaleY(1.0); } }
+@keyframes eqBar2 { from { transform: scaleY(0.5); } to { transform: scaleY(0.2); } }
+@keyframes eqBar3 { from { transform: scaleY(0.2); } to { transform: scaleY(0.9); } }
+
+/* ---- project mindmap (ProjectMindmap.tsx) ---------------------------------
+   Radial map for projects without a written case study. Nodes are HTML at
+   percentage positions over an SVG of curved connectors in the same 1000×620
+   space; leaves pop in and their connectors draw themselves on each focus. */
+.mm-stage { position: relative; width: 100%; aspect-ratio: 1000 / 620; }
+.mm-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.mm-ring { fill: none; stroke: rgba(0, 0, 0, 0.08); stroke-width: 1.2; stroke-dasharray: 3 7; }
+.mm-trunk { fill: none; stroke: #d6cfc3; stroke-width: 2.4; stroke-linecap: round; transition: stroke 0.3s, opacity 0.3s; }
+.mm-twig { fill: none; stroke-width: 1.8; stroke-linecap: round; opacity: 0.85; stroke-dasharray: 1; stroke-dashoffset: 1; animation: mm-draw 0.5s ease-out forwards; }
+@keyframes mm-draw { to { stroke-dashoffset: 0; } }
+.mm-center {
+  position: absolute; transform: translate(-50%, -50%); z-index: 3;
+  color: #fff; font-weight: 800; font-size: clamp(18px, 2.3vw, 26px); letter-spacing: -0.02em; white-space: nowrap;
+  padding: 14px 24px; border-radius: 999px; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+.mm-branch {
+  position: absolute; transform: translate(-50%, -50%); z-index: 2;
+  display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer;
+  padding: 9px 15px; border-radius: 999px; background: #fff; border: 1.5px solid var(--h); color: var(--h);
+  font-size: 14px; font-weight: 700; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, scale 0.2s;
+}
+.mm-branch:hover { scale: 1.06; }
+.mm-branch.is-active { background: var(--h); color: #fff; box-shadow: 0 8px 22px color-mix(in srgb, var(--h) 40%, transparent); }
+.mm-branch:focus-visible { outline: 2px solid #0071e3; outline-offset: 3px; }
+.mm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--h); flex: none; }
+.mm-branch.is-active .mm-dot { background: #fff; }
+.mm-leaf {
+  position: absolute; z-index: 1; display: inline-block;
+  font-size: 12.5px; font-weight: 600; line-height: 1.3; color: #2a2622;
+  background: #fff; border: 1px solid color-mix(in srgb, var(--h) 35%, #e5ded2); border-left: 3px solid var(--h);
+  border-radius: 10px; padding: 6px 10px; box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+  animation: mm-pop 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+.mm-leaf--r { transform: translate(0, -50%); }
+.mm-leaf--l { transform: translate(-100%, -50%); text-align: right; }
+.mm-leaf--c { transform: translate(-50%, -50%); text-align: center; }
+@keyframes mm-pop { from { opacity: 0; scale: 0.6; } to { opacity: 1; scale: 1; } }
+.mm-card { margin-top: 18px; background: #fff; border: 1px solid rgba(0, 0, 0, 0.08); border-left: 4px solid var(--h); border-radius: 16px; padding: 16px 20px; }
+.mm-card__label { font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--h); }
+.mm-step { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.15); background: #fff; font-size: 15px; color: #2a2622; }
+.mm-step:hover { border-color: rgba(0, 0, 0, 0.45); }
+.mm-step:focus-visible { outline: 2px solid #0071e3; outline-offset: 2px; }
+/* tree (narrow) */
+.mm-tree__root { display: inline-block; color: #fff; font-weight: 800; font-size: 20px; padding: 10px 18px; border-radius: 999px; }
+.mm-tree__item { border-left: 3px solid var(--h); background: #fff; border-radius: 0 14px 14px 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); }
+.mm-tree__btn { width: 100%; min-height: 46px; display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 15px; font-weight: 700; color: var(--h); }
+.mm-tree__btn:focus-visible { outline: 2px solid #0071e3; outline-offset: -2px; border-radius: 0 14px 14px 0; }
+.mm-chev { font-size: 18px; font-weight: 700; color: var(--h); }
+.mm-tree__body { padding: 0 14px 14px 32px; font-size: 14.5px; line-height: 1.55; color: #2a2622; animation: mm-fade 0.3s ease both; }
+.mm-leaf--tree { position: static; }
+@keyframes mm-fade { from { opacity: 0; translate: 0 -4px; } to { opacity: 1; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mm-twig { animation: none; stroke-dashoffset: 0; }
+  .mm-leaf, .mm-tree__body { animation: none; }
 }

@@ -1,10 +1,19 @@
 import { EFFORT_RAMP, OWNERSHIP_COLORS } from '../scene/lib/cityTheme'
 import type { MapLayer } from '../types'
 
-// Legend for the active map layer, shown bottom-center.
+// Legend for the active map layer, shown bottom-center. Frosted glass: a very
+// light translucent fill with a strong backdrop blur, so it reads clearly
+// without the loud solid panel competing with the scene behind it.
 export function Legend({ layer }: { layer: MapLayer }) {
   return (
-    <div className="pointer-events-none absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-20 max-w-[70vw] -translate-x-1/2 rounded-[18px] border border-black/10 bg-white/90 px-[14px] py-[8px] shadow-[0_4px_18px_rgba(0,0,0,0.12)] backdrop-blur-md sm:bottom-[58px] sm:max-w-none sm:rounded-full">
+    <div
+      className="pointer-events-none absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-20 max-w-[70vw] -translate-x-1/2 rounded-[18px] border px-[14px] py-[8px] backdrop-blur-xl sm:bottom-[58px] sm:max-w-none sm:rounded-full"
+      style={{
+        background: 'var(--legend-bg)',
+        borderColor: 'var(--legend-border)',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.25)',
+      }}
+    >
       {layer === 'effort' ? <EffortLegend /> : <OwnershipLegend />}
     </div>
   )
@@ -12,15 +21,15 @@ export function Legend({ layer }: { layer: MapLayer }) {
 
 function EffortLegend() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-[10px] gap-y-1 text-[9px] font-medium text-ink-soft sm:text-[10px]">
-      <span className="font-mono uppercase tracking-[0.14em] text-ink">Effort</span>
-      <span>Light</span>
-      <span className="flex overflow-hidden rounded-[3px]">
+    <div className="flex flex-wrap items-center justify-center gap-x-[10px] gap-y-1 text-[9px] font-semibold sm:text-[10px]">
+      <span className="glass-label font-mono uppercase tracking-[0.14em]">Effort</span>
+      <span className="glass-label-soft">Light</span>
+      <span className="flex overflow-hidden rounded-[3px] ring-1 ring-black/10">
         {EFFORT_RAMP.map((c) => (
           <span key={c} className="h-[12px] w-[16px]" style={{ background: c }} />
         ))}
       </span>
-      <span>Heavy</span>
+      <span className="glass-label-soft">Heavy</span>
     </div>
   )
 }
@@ -34,11 +43,11 @@ const OWNERSHIP_LABELS: Record<string, string> = {
 
 function OwnershipLegend() {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-[12px] gap-y-1 text-[9px] font-medium text-ink-soft sm:text-[10px]">
-      <span className="font-mono uppercase tracking-[0.14em] text-ink">Ownership</span>
+    <div className="flex flex-wrap items-center justify-center gap-x-[12px] gap-y-1 text-[9px] font-semibold sm:text-[10px]">
+      <span className="glass-label font-mono uppercase tracking-[0.14em]">Ownership</span>
       {Object.entries(OWNERSHIP_COLORS).map(([key, color]) => (
-        <span key={key} className="flex items-center gap-[5px]">
-          <span className="h-[11px] w-[11px] rounded-[2px]" style={{ background: color }} />
+        <span key={key} className="glass-label-soft flex items-center gap-[5px]">
+          <span className="h-[11px] w-[11px] rounded-[2px] ring-1 ring-black/10" style={{ background: color }} />
           {OWNERSHIP_LABELS[key]}
         </span>
       ))}
